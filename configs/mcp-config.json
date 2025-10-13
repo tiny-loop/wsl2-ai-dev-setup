@@ -1,0 +1,202 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/mcp-config.schema.json",
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--browserUrl=http://localhost:9222"
+      ],
+      "env": {},
+      "metadata": {
+        "description": "Chrome DevTools MCP Server - requires Chrome running with remote debugging",
+        "github_issues": {
+          "wsl2_chrome_detection": "https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131",
+          "headless_protocol_error": "https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225"
+        },
+        "setup": [
+          "1. Start Chrome with debugging: bash scripts/start-chrome-debug.sh",
+          "2. Verify Chrome is accessible: curl http://localhost:9222/json/version",
+          "3. Configure this MCP server in Claude Code config",
+          "4. This MCP connects to the external Chrome instance via --browserUrl"
+        ],
+        "wsl2_notes": [
+          "This configuration uses --browserUrl to connect to external Chrome",
+          "This is the recommended workaround for WSL2 (GitHub Issue #131)",
+          "Alternative: Use --executable-path to point to Windows Chrome (see below)",
+          "WSLg must be enabled for GUI Chrome in WSL2"
+        ],
+        "troubleshooting": {
+          "connection_refused": "Chrome not running. Run: bash scripts/start-chrome-debug.sh",
+          "port_in_use": "Check existing Chrome: lsof -i :9222 or netstat -tuln | grep 9222",
+          "timeout": "Chrome starting up. Wait 5 seconds and retry",
+          "protocol_error": "If using headless=false in WSL2, ensure WSLg is properly configured",
+          "chrome_not_found": "Install Chrome in WSL: bash scripts/install-chrome.sh",
+          "wslg_display_error": "Check: echo $DISPLAY (should show :0 or similar). Update WSL: wsl --update"
+        }
+      }
+    }
+  },
+  "comments": {
+    "usage": "Copy this configuration to your Claude Code config file",
+    "location": "~/.config/claude/config.json or as specified by Claude Code",
+    "verified_workarounds": [
+      "This configuration is based on verified solutions from GitHub Issues #131 and #225",
+      "The --browserUrl flag connects to an externally running Chrome instance",
+      "This is the most stable approach for WSL2 environments",
+      "Chrome must be started separately with --remote-debugging-port=9222"
+    ],
+    "alternative_configs": {
+      "method_1_browserurl_recommended": {
+        "description": "Current config - Connect to external Chrome (RECOMMENDED for WSL2)",
+        "mcpServers": {
+          "chrome-devtools": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--browserUrl=http://localhost:9222"
+            ]
+          }
+        },
+        "notes": [
+          "Requires Chrome running externally: bash scripts/start-chrome-debug.sh",
+          "Most stable for WSL2 environments",
+          "Verified solution from GitHub Issue #131"
+        ]
+      },
+      "method_2_windows_chrome": {
+        "description": "Use Windows Chrome directly from WSL2",
+        "mcpServers": {
+          "chrome-devtools": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--executable-path=/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+            ]
+          }
+        },
+        "notes": [
+          "Points to Windows Chrome installation",
+          "May have display/GUI issues in WSL2",
+          "Adjust path if Chrome installed in different location",
+          "From GitHub Issue #131 comments"
+        ]
+      },
+      "method_3_wsl_chrome_headless": {
+        "description": "Use WSL Chrome in headless mode",
+        "mcpServers": {
+          "chrome-devtools": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--headless=true"
+            ]
+          }
+        },
+        "notes": [
+          "Requires Chrome installed in WSL",
+          "Headless mode avoids WSLg GUI issues",
+          "May still have detection problems",
+          "Not recommended - use Method 1 instead"
+        ]
+      },
+      "with_custom_port": {
+        "description": "Using a different port (e.g., for multiple Chrome instances)",
+        "mcpServers": {
+          "chrome-devtools": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--browserUrl=http://localhost:9223"
+            ]
+          }
+        },
+        "notes": [
+          "Start Chrome with: CHROME_DEBUG_PORT=9223 bash scripts/start-chrome-debug.sh",
+          "Useful for running multiple Chrome instances"
+        ]
+      },
+      "multiple_chrome_instances": {
+        "description": "Multiple Chrome instances on different ports",
+        "mcpServers": {
+          "chrome-devtools-main": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--browserUrl=http://localhost:9222"
+            ]
+          },
+          "chrome-devtools-test": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--browserUrl=http://localhost:9223"
+            ]
+          }
+        },
+        "notes": [
+          "Run multiple Chrome instances on different ports",
+          "Useful for development and testing separation"
+        ]
+      },
+      "with_additional_options": {
+        "description": "Advanced configuration with additional Chrome options",
+        "mcpServers": {
+          "chrome-devtools": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--browserUrl=http://localhost:9222",
+              "--log-file=/tmp/chrome-mcp.log",
+              "--viewport=1920x1080"
+            ]
+          }
+        },
+        "notes": [
+          "Add --log-file for debugging connection issues",
+          "Use --viewport to set initial browser size",
+          "See GitHub README for all available options"
+        ]
+      }
+    },
+    "windows_11_network_mirroring": {
+      "description": "For better WSL2-Windows networking (Windows 11 22H2+)",
+      "steps": [
+        "1. Edit %USERPROFILE%\\.wslconfig in Windows",
+        "2. Add the following:",
+        "[wsl2]",
+        "networkingMode=mirrored",
+        "3. Restart WSL: wsl --shutdown (in PowerShell)",
+        "4. Restart WSL2 distribution"
+      ],
+      "benefits": [
+        "Improves network connectivity between WSL2 and Windows",
+        "May help with localhost port forwarding",
+        "Recommended for MCP tools in WSL2"
+      ]
+    },
+    "debugging_connection": {
+      "test_chrome_connection": "curl http://localhost:9222/json/version",
+      "check_chrome_process": "ps aux | grep chrome",
+      "check_port": "lsof -i :9222 or netstat -tuln | grep 9222",
+      "check_wslg": "echo $DISPLAY",
+      "test_gui": "google-chrome --version && google-chrome about:blank",
+      "mcp_debug": "Add --log-file=/tmp/chrome-mcp.log to args and check the log"
+    },
+    "references": {
+      "github_repo": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "issue_131_wsl2": "https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131",
+      "issue_225_headless": "https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225",
+      "cursor_forum_guide": "https://forum.cursor.com/t/complete-guide-setting-up-mcp-tools-with-browser-extensions-in-wsl2/109614",
+      "chrome_devtools_protocol": "https://chromedevtools.github.io/devtools-protocol/"
+    }
+  }
+}
