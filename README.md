@@ -244,13 +244,28 @@ bash scripts/install-claude-code.sh
 
 Anthropic API 키 필요: https://console.anthropic.com/settings/keys
 
+**자동 설정:**
+- Claude CLI 설치
+- `claude mcp add` 명령으로 chrome-devtools MCP 서버 추가
+- jq로 WSL2 workaround 인수 (`--browserUrl`) 자동 추가
+- 설정 파일: `~/.config/claude/config.json`
+
 #### Gemini CLI
 
 ```bash
 bash scripts/install-gemini.sh
 ```
 
-Google AI API 키 필요: https://aistudio.google.com/app/apikey
+Google 계정 OAuth 인증 사용 (API 키 불필요):
+- 설치 후 `gemini` 명령 실행
+- 로그인 프롬프트에 따라 Google 계정으로 인증
+- 무료 티어: Gemini 2.5 Pro, 분당 60회/하루 1,000회 요청
+
+**자동 설정:**
+- Gemini CLI 설치
+- `gemini mcp add` 명령으로 chrome-devtools MCP 서버 추가
+- jq로 WSL2 workaround 인수 (`--browserUrl`) 자동 추가
+- 설정 파일: `~/.gemini/settings.json`
 
 #### Chrome + MCP
 
@@ -260,8 +275,9 @@ bash scripts/install-chrome.sh
 
 설치 내역:
 - WSL2용 Google Chrome
-- chrome-devtools-mcp 서버
-- 원격 디버깅 설정 스크립트
+- 원격 디버깅 설정 스크립트 (`start-chrome-debug.sh`)
+
+**참고:** chrome-devtools-mcp는 npm 글로벌 설치하지 않습니다. 각 CLI의 MCP 설정에서 `npx`를 통해 실행 시 자동으로 최신 버전을 다운로드합니다.
 
 #### GitHub용 SSH 키
 
@@ -309,9 +325,22 @@ Chrome 버전 정보가 담긴 JSON 출력이 표시되어야 합니다.
 
 ### MCP 설정
 
-**방법 1: 외부 Chrome과 --browserUrl 사용 (권장)**
+**✅ 자동 설정 (권장)**
 
-Claude Code 설정 파일에 다음 설정을 복사하세요:
+설치 스크립트(`install-claude-code.sh`, `install-gemini.sh`)가 자동으로 MCP를 설정합니다:
+1. CLI의 `mcp add` 명령으로 chrome-devtools 서버 추가
+2. jq로 `--browserUrl=http://localhost:9222` 인수 자동 추가
+
+설치 후 추가 설정 불필요! Chrome 디버깅만 시작하면 됩니다:
+```bash
+bash scripts/start-chrome-debug.sh
+```
+
+---
+
+**수동 설정 (참고용)**
+
+이미 설정이 완료되었지만, 수동으로 변경하려면:
 
 ```json
 {
@@ -328,7 +357,7 @@ Claude Code 설정 파일에 다음 설정을 복사하세요:
 }
 ```
 
-**대안 방법:**
+**대안 방법 (고급):**
 
 `configs/mcp-config.json` 파일에서 다음 내용을 참고하세요:
 - 방법 2: `--executable-path`로 Windows Chrome 직접 사용
@@ -336,7 +365,9 @@ Claude Code 설정 파일에 다음 설정을 복사하세요:
 - Windows 11 네트워크 미러링 설정
 - 여러 Chrome 인스턴스 설정
 
-설정 파일 위치는 Claude Code 설정에 따라 다릅니다. Claude Code 문서를 확인하세요.
+**설정 파일 위치:**
+- Claude Code: `~/.config/claude/config.json`
+- Gemini CLI: `~/.gemini/settings.json`
 
 ## 환경 설정
 
@@ -361,8 +392,9 @@ Claude Code 설정 파일에 다음 설정을 복사하세요:
 
 ```bash
 export ANTHROPIC_API_KEY='your-anthropic-api-key-here'
-export GOOGLE_API_KEY='your-google-api-key-here'
 ```
+
+**참고:** Gemini CLI는 OAuth 인증을 사용하므로 API 키가 필요하지 않습니다.
 
 ## 사용법
 
@@ -376,7 +408,8 @@ claude                          # 대화형 세션 시작
 ### Gemini CLI
 
 ```bash
-google-genai --help             # 도움말 표시
+gemini                          # 대화형 세션 시작 (첫 실행 시 인증)
+gemini --help                   # 도움말 표시
 ```
 
 ### Chrome 디버깅

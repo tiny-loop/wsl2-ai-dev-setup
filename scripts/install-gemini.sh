@@ -5,21 +5,21 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Source common functions
+# common.sh is needed for OS detection and package installation (for jq)
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    echo "ERROR: common.sh not found. This script requires it for installing dependencies." >&2
+    exit 1
+fi
+
+# Override log function for context
 log() {
     echo -e "${GREEN}[Gemini Setup]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 # Check if Node.js is installed
@@ -32,10 +32,23 @@ check_nodejs() {
     log "✓ Node.js found: $(node --version)"
 }
 
+# Check for and install jq if not present, using functions from common.sh
+check_and_install_jq() {
+    log "Checking for jq..."
+    if ! is_package_installed "jq"; then
+        warning "jq not found. Attempting to install..."
+        install_package "jq"
+        log "✓ jq installed."
+    else
+        log "✓ jq is already installed."
+    fi
+}
+
 # Check if Gemini CLI is already installed
 check_existing() {
-    if command -v gemini &> /dev/null || command -v google-genai &> /dev/null; then
-        warning "Gemini CLI might already be installed"
+    if command -v gemini &> /dev/null; then
+        GEMINI_VERSION=$(gemini --version 2>/dev/null || echo "unknown")
+        warning "Gemini CLI is already installed: $GEMINI_VERSION"
         read -p "Do you want to reinstall/update? [y/N]: " reinstall
         if [[ ! "$reinstall" =~ ^[Yy]$ ]]; then
             log "Skipping Gemini CLI installation"
@@ -48,8 +61,8 @@ check_existing() {
 install_gemini() {
     log "Installing Gemini CLI..."
 
-    # Install Google Generative AI CLI
-    npm install -g @google/generative-ai-cli
+    # Install official Google Gemini CLI
+    npm install -g @google/gemini-cli
 
     log "✓ Gemini CLI installed successfully"
 }
@@ -58,60 +71,88 @@ install_gemini() {
 verify_installation() {
     log "Verifying Gemini CLI installation..."
 
-    if command -v google-genai &> /dev/null; then
-        log "✓ Gemini CLI is available"
+    if command -v gemini &> /dev/null; then
+        GEMINI_VERSION=$(gemini --version 2>/dev/null || echo "unknown")
+        log "✓ Gemini CLI is available: $GEMINI_VERSION"
     else
-        warning "Gemini CLI installation verification failed"
-        warning "You may need to run: source ~/.bashrc"
+        error "Gemini CLI installation verification failed"
+        error "Try running: source ~/.bashrc"
+        exit 1
     fi
 }
 
-# Setup API key
-setup_api_key() {
-    log ""
-    log "Gemini CLI requires an API key from Google AI Studio"
-    log "You can get your API key from: https://aistudio.google.com/app/apikey"
-    log ""
-    read -p "Do you want to set up your API key now? [y/N]: " setup_key
+# Apply WSL2 workaround config using gemini mcp add + jq
+apply_wsl2_workaround_config() {
+    log "Configuring chrome-devtools-mcp for WSL2..."
+    local GEMINI_CONFIG_DIR="$HOME/.gemini"
+    local GEMINI_CONFIG_FILE="$GEMINI_CONFIG_DIR/settings.json"
 
-    if [[ "$setup_key" =~ ^[Yy]$ ]]; then
-        read -p "Enter your Google AI API key: " api_key
-        if [ -n "$api_key" ]; then
-            # Add API key to bashrc if not already present
-            if ! grep -q 'GOOGLE_API_KEY' "$HOME/.bashrc"; then
-                echo '' >> "$HOME/.bashrc"
-                echo '# Google AI API Key' >> "$HOME/.bashrc"
-                echo "export GOOGLE_API_KEY='$api_key'" >> "$HOME/.bashrc"
-                log "✓ API key added to ~/.bashrc"
-            else
-                # Update existing API key
-                sed -i "s/export GOOGLE_API_KEY=.*/export GOOGLE_API_KEY='$api_key'/" "$HOME/.bashrc"
-                log "✓ API key updated in ~/.bashrc"
-            fi
-            export GOOGLE_API_KEY="$api_key"
-        fi
+    # Step 1: Use gemini mcp add command to create base configuration
+    log "Adding chrome-devtools MCP server..."
+    if gemini mcp add chrome-devtools npx chrome-devtools-mcp@latest 2>/dev/null; then
+        log "✓ MCP server added via 'gemini mcp add'"
     else
-        log "You can set your API key later by adding to ~/.bashrc:"
-        log "export GOOGLE_API_KEY='your-api-key-here'"
+        warning "'gemini mcp add' failed, falling back to manual config creation"
+        mkdir -p "$GEMINI_CONFIG_DIR"
+        if [ ! -f "$GEMINI_CONFIG_FILE" ] || [ ! -s "$GEMINI_CONFIG_FILE" ]; then
+            echo '{"mcpServers":{}}' > "$GEMINI_CONFIG_FILE"
+        fi
+        jq '.mcpServers."chrome-devtools" = {"command": "npx", "args": ["chrome-devtools-mcp@latest"]}' \
+            "$GEMINI_CONFIG_FILE" > "${GEMINI_CONFIG_FILE}.tmp" && mv "${GEMINI_CONFIG_FILE}.tmp" "$GEMINI_CONFIG_FILE"
     fi
+
+    # Step 2: Verify config file exists
+    if [ ! -f "$GEMINI_CONFIG_FILE" ]; then
+        error "Config file not created at $GEMINI_CONFIG_FILE"
+        return 1
+    fi
+
+    # Step 3: Add --browserUrl argument using jq (avoid duplicates)
+    log "Adding WSL2 workaround argument..."
+    local BROWSER_URL="--browserUrl=http://localhost:9222"
+
+    jq ".mcpServers.\"chrome-devtools\".args |= if contains([\"$BROWSER_URL\"]) then . else . + [\"$BROWSER_URL\"] end" \
+        "$GEMINI_CONFIG_FILE" > "${GEMINI_CONFIG_FILE}.tmp" && mv "${GEMINI_CONFIG_FILE}.tmp" "$GEMINI_CONFIG_FILE"
+
+    log "✓ Chrome-devtools MCP configured with WSL2 workaround"
+    log "  Config file: $GEMINI_CONFIG_FILE"
+}
+
+# Setup authentication
+setup_authentication() {
+    log ""
+    log "Gemini CLI uses Google Account authentication (OAuth)"
+    log ""
+    log "To authenticate:"
+    log "1. Run 'gemini' command in your terminal"
+    log "2. Follow the login prompts to sign in with your Google account"
+    log "3. Free tier includes:"
+    log "   - Gemini 2.5 Pro with 1M token context window"
+    log "   - 60 requests/minute, 1,000 requests/day"
+    log ""
 }
 
 # Main execution
 main() {
     log "=== Gemini CLI Installation ==="
 
+    detect_os # Needed for package manager functions from common.sh
     check_nodejs
+    check_and_install_jq
     check_existing
     install_gemini
     verify_installation
-    setup_api_key
+    apply_wsl2_workaround_config
+    setup_authentication
 
     log ""
     log "=== Gemini CLI Installation Complete ==="
+    log "Configuration directory: $HOME/.gemini"
     log ""
     log "Next steps:"
     log "1. Run 'source ~/.bashrc' to apply environment changes"
-    log "2. Run 'google-genai --help' to see available commands"
+    log "2. Run 'gemini' to authenticate and start using Gemini CLI"
+    log "3. The MCP server configuration for WSL2 has been automatically applied."
 }
 
 main "$@"
