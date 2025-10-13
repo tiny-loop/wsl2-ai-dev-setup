@@ -61,8 +61,8 @@ dev_setup/
 ├── scripts/                   # Individual installation scripts
 │   ├── common.sh              # Common functions (OS detection, package manager abstraction)
 │   ├── install-nodejs.sh      # NVM + Node.js LTS
-│   ├── install-claude-code.sh # Claude Code + API key setup
-│   ├── install-gemini.sh      # Gemini CLI + API key setup
+│   ├── install-claude-code.sh # Claude Code + API key setup + MCP configuration
+│   ├── install-gemini.sh      # Gemini CLI + OAuth authentication + MCP configuration
 │   ├── install-chrome.sh      # Chrome + chrome-devtools-mcp
 │   ├── start-chrome-debug.sh  # Chrome remote debugging launcher
 │   └── setup-ssh-key.sh       # SSH key generation (ED25519/RSA)
@@ -103,7 +103,7 @@ nvm --version
 
 # Check CLI tools
 claude --version
-google-genai --version
+gemini --version
 
 # Check Chrome
 google-chrome --version
@@ -129,6 +129,45 @@ check-chrome-debug
 
 # Stop Chrome debugging
 pkill -f 'chrome.*remote-debugging-port=9222'
+```
+
+## ⚠️ IMPORTANT: Chrome Debugging Requirement for MCP
+
+**BEFORE using Chrome MCP features with Claude Code or Gemini CLI:**
+
+1. **ALWAYS ensure Chrome is running in debug mode** on port 9222:
+   ```bash
+   bash scripts/start-chrome-debug.sh
+   ```
+
+2. **Verify Chrome debugging is active:**
+   ```bash
+   curl http://localhost:9222/json/version
+   ```
+   - Should return JSON with Chrome version info
+   - If connection refused: Chrome debug mode is NOT running
+
+3. **If MCP connection fails:**
+   ```bash
+   # Check if Chrome debug port is active
+   lsof -i :9222
+
+   # If nothing found, start Chrome debugging
+   bash scripts/start-chrome-debug.sh
+   ```
+
+**Why this is critical:**
+- MCP configuration uses `--browserUrl=http://localhost:9222`
+- Without Chrome running in debug mode, all MCP chrome-devtools commands will fail
+- Installation scripts configure MCP automatically, but Chrome must be started manually each time
+
+**Auto-start Chrome debugging (optional):**
+Add to `~/.bashrc`:
+```bash
+# Auto-start Chrome debugging if not running
+if ! lsof -i :9222 &>/dev/null; then
+    bash ~/my_work/wsl2-ai-dev-setup/scripts/start-chrome-debug.sh &
+fi
 ```
 
 ## Modifying Scripts
@@ -200,9 +239,11 @@ Template for Claude Code MCP configuration based on verified GitHub solutions.
 Reference for all environment variables and functions that get added to `~/.bashrc`:
 - NVM initialization
 - npm global path
-- API keys (placeholders - user must fill in)
+- Anthropic API key (placeholder - user must fill in)
+- Gemini CLI authentication (OAuth - no API key needed)
 - SSH agent auto-start
 - Useful aliases and functions
+- Chrome debugging helpers
 
 ## Troubleshooting Guide
 

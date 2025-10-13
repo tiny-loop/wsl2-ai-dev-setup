@@ -107,13 +107,28 @@ bash scripts/install-claude-code.sh
 
 Requires an Anthropic API key from: https://console.anthropic.com/settings/keys
 
+**Automatic setup:**
+- Installs Claude CLI
+- Adds chrome-devtools MCP server via `claude mcp add` command
+- Automatically adds WSL2 workaround argument (`--browserUrl`) with jq
+- Config file: `~/.config/claude/config.json`
+
 #### Gemini CLI
 
 ```bash
 bash scripts/install-gemini.sh
 ```
 
-Requires a Google AI API key from: https://aistudio.google.com/app/apikey
+Uses Google Account OAuth authentication (no API key required):
+- Run `gemini` command after installation
+- Follow the login prompts to authenticate with your Google account
+- Free tier: Gemini 2.5 Pro, 60 requests/min, 1,000 requests/day
+
+**Automatic setup:**
+- Installs Gemini CLI
+- Adds chrome-devtools MCP server via `gemini mcp add` command
+- Automatically adds WSL2 workaround argument (`--browserUrl`) with jq
+- Config file: `~/.gemini/settings.json`
 
 #### Chrome + MCP
 
@@ -123,8 +138,9 @@ bash scripts/install-chrome.sh
 
 This installs:
 - Google Chrome for WSL2
-- chrome-devtools-mcp server
-- Remote debugging setup scripts
+- Remote debugging setup scripts (`start-chrome-debug.sh`)
+
+**Note:** chrome-devtools-mcp is not installed globally via npm. It's automatically downloaded via `npx` when run from each CLI's MCP configuration.
 
 #### SSH Keys for GitHub
 
@@ -172,9 +188,22 @@ You should see JSON output with Chrome version information.
 
 ### MCP Configuration
 
-**Method 1: External Chrome with --browserUrl (RECOMMENDED)**
+**✅ Automatic Setup (Recommended)**
 
-Copy this configuration to your Claude Code config file:
+Installation scripts (`install-claude-code.sh`, `install-gemini.sh`) automatically configure MCP:
+1. Add chrome-devtools server via CLI's `mcp add` command
+2. Automatically add `--browserUrl=http://localhost:9222` argument with jq
+
+No additional configuration needed after installation! Just start Chrome debugging:
+```bash
+bash scripts/start-chrome-debug.sh
+```
+
+---
+
+**Manual Configuration (Reference)**
+
+Configuration is already done, but if you want to change it manually:
 
 ```json
 {
@@ -191,7 +220,7 @@ Copy this configuration to your Claude Code config file:
 }
 ```
 
-**Alternative Methods:**
+**Alternative Methods (Advanced):**
 
 See `configs/mcp-config.json` for:
 - Method 2: Using Windows Chrome directly with `--executable-path`
@@ -199,7 +228,9 @@ See `configs/mcp-config.json` for:
 - Windows 11 network mirroring configuration
 - Multiple Chrome instances setup
 
-The configuration file location depends on your Claude Code setup. Check Claude Code documentation for details.
+**Configuration File Locations:**
+- Claude Code: `~/.config/claude/config.json`
+- Gemini CLI: `~/.gemini/settings.json`
 
 ## Environment Configuration
 
@@ -224,8 +255,9 @@ Edit your `~/.bashrc` and add your actual API keys:
 
 ```bash
 export ANTHROPIC_API_KEY='your-anthropic-api-key-here'
-export GOOGLE_API_KEY='your-google-api-key-here'
 ```
+
+**Note:** Gemini CLI uses OAuth authentication, so no API key is required.
 
 ## Usage
 
@@ -239,7 +271,8 @@ claude                          # Start interactive session
 ### Gemini CLI
 
 ```bash
-google-genai --help             # Show help
+gemini                          # Start interactive session (authenticate on first run)
+gemini --help                   # Show help
 ```
 
 ### Chrome Debugging

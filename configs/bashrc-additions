@@ -21,9 +21,8 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 # Get your key from: https://console.anthropic.com/settings/keys
 export ANTHROPIC_API_KEY='your-anthropic-api-key-here'
 
-# Google AI API Key for Gemini CLI
-# Get your key from: https://aistudio.google.com/app/apikey
-export GOOGLE_API_KEY='your-google-api-key-here'
+# Gemini CLI uses OAuth authentication (no API key needed)
+# Simply run 'gemini' command and follow the login prompts
 
 # ============================================
 # SSH Agent Auto-start
@@ -96,7 +95,7 @@ check-dev-env() {
     echo "Node.js: $(command -v node &>/dev/null && node --version || echo 'Not installed')"
     echo "npm: $(command -v npm &>/dev/null && npm --version || echo 'Not installed')"
     echo "Claude Code: $(command -v claude &>/dev/null && echo 'Installed' || echo 'Not installed')"
-    echo "Gemini CLI: $(command -v google-genai &>/dev/null && echo 'Installed' || echo 'Not installed')"
+    echo "Gemini CLI: $(command -v gemini &>/dev/null && echo 'Installed' || echo 'Not installed')"
     echo "Chrome: $(command -v google-chrome &>/dev/null && google-chrome --version || echo 'Not installed')"
     echo ""
     echo "Chrome Debug Port: ${CHROME_DEBUG_PORT:-9222}"
