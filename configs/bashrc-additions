@@ -1,0 +1,123 @@
+# WSL2 Development Environment - Bashrc Additions
+# Add these lines to your ~/.bashrc file
+
+# ============================================
+# Node.js and NVM Configuration
+# ============================================
+
+# NVM initialization
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# npm global packages
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# ============================================
+# API Keys (DO NOT COMMIT TO GIT)
+# ============================================
+
+# Anthropic API Key for Claude Code
+# Get your key from: https://console.anthropic.com/settings/keys
+export ANTHROPIC_API_KEY='your-anthropic-api-key-here'
+
+# Google AI API Key for Gemini CLI
+# Get your key from: https://aistudio.google.com/app/apikey
+export GOOGLE_API_KEY='your-google-api-key-here'
+
+# ============================================
+# SSH Agent Auto-start
+# ============================================
+
+# Start SSH agent automatically
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+    ssh-add ~/.ssh/id_ed25519 2>/dev/null || ssh-add ~/.ssh/id_rsa 2>/dev/null || true
+fi
+
+# ============================================
+# Chrome Remote Debugging
+# ============================================
+
+# Default Chrome debugging port
+export CHROME_DEBUG_PORT=9222
+
+# ============================================
+# WSL2 Specific Settings
+# ============================================
+
+# Fix for WSLg display
+export DISPLAY="${DISPLAY:-:0}"
+
+# Set default editor (optional)
+# export EDITOR="code --wait"  # For VSCode
+# export EDITOR="vim"           # For vim
+
+# ============================================
+# Useful Aliases
+# ============================================
+
+# Chrome debugging
+alias chrome-debug='bash ~/my_work/dev_setup/scripts/start-chrome-debug.sh'
+alias chrome-stop='pkill -f "chrome.*remote-debugging-port"'
+
+# Development shortcuts
+alias nvm-use-lts='nvm use --lts'
+alias npm-list-global='npm list -g --depth=0'
+
+# Git shortcuts
+alias gs='git status'
+alias gp='git pull'
+alias gc='git commit'
+
+# System info
+alias wsl-version='uname -r'
+alias node-version='node --version && npm --version'
+
+# ============================================
+# Helper Functions
+# ============================================
+
+# Check if Chrome debugging is running
+check-chrome-debug() {
+    if lsof -i :${CHROME_DEBUG_PORT:-9222} &> /dev/null; then
+        echo "Chrome is running with remote debugging on port ${CHROME_DEBUG_PORT:-9222}"
+        curl -s http://localhost:${CHROME_DEBUG_PORT:-9222}/json/version | grep -o '"Browser":"[^"]*"' || echo "Connected"
+    else
+        echo "Chrome is not running with remote debugging"
+        echo "Start with: chrome-debug"
+    fi
+}
+
+# Quick environment check
+check-dev-env() {
+    echo "=== Development Environment Status ==="
+    echo ""
+    echo "Node.js: $(command -v node &>/dev/null && node --version || echo 'Not installed')"
+    echo "npm: $(command -v npm &>/dev/null && npm --version || echo 'Not installed')"
+    echo "Claude Code: $(command -v claude &>/dev/null && echo 'Installed' || echo 'Not installed')"
+    echo "Gemini CLI: $(command -v google-genai &>/dev/null && echo 'Installed' || echo 'Not installed')"
+    echo "Chrome: $(command -v google-chrome &>/dev/null && google-chrome --version || echo 'Not installed')"
+    echo ""
+    echo "Chrome Debug Port: ${CHROME_DEBUG_PORT:-9222}"
+    check-chrome-debug
+    echo ""
+    echo "SSH Keys:"
+    ls -1 ~/.ssh/id_* 2>/dev/null | grep -v '.pub' || echo "No SSH keys found"
+}
+
+# Update all global npm packages
+npm-update-global() {
+    echo "Updating all global npm packages..."
+    npm update -g
+    echo "Current global packages:"
+    npm list -g --depth=0
+}
+
+# ============================================
+# Display message on terminal start (optional)
+# ============================================
+
+# Uncomment to show dev environment status on shell start
+# echo "WSL2 Dev Environment Ready"
+# echo "Run 'check-dev-env' to see status"

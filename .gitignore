@@ -1,0 +1,53 @@
+# Setup logs
+setup.log
+*.log
+
+# API Keys and Secrets (NEVER commit these!)
+.env
+.env.local
+*_api_key*
+*_secret*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Chrome debugging
+chrome-debug-profile/
+
+# Node.js (if testing locally)
+node_modules/
+
+# User-specific bashrc modifications (contains API keys)
+# Note: bashrc-additions is a template, keep it in repo
+.bashrc_backup
+
+# SSH keys (should never be in repo)
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Backup files
+*.bak
+*.backup
