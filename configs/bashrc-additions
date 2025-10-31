@@ -113,6 +113,16 @@ npm-update-global() {
     npm list -g --depth=0
 }
 
+# Check versions of all installed tools
+check-versions() {
+    if [ -f ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh ]; then
+        bash ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh
+    else
+        echo "Error: check-versions.sh not found"
+        echo "Expected location: ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh"
+    fi
+}
+
 # ============================================
 # Display message on terminal start (optional)
 # ============================================

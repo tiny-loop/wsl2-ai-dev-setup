@@ -104,6 +104,58 @@
           "Not recommended - use Method 1 instead"
         ]
       },
+      "method_4_websocket_endpoint": {
+        "description": "WebSocket Endpoint (v0.9.0+) - Direct WebSocket connection",
+        "version_required": "chrome-devtools-mcp@0.9.0 or higher",
+        "mcpServers": {
+          "chrome-devtools": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "chrome-devtools-mcp@latest",
+              "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/REPLACE_WITH_ACTUAL_ID"
+            ]
+          }
+        },
+        "setup_steps": [
+          "1. Start Chrome: bash scripts/start-chrome-debug.sh",
+          "2. Get WebSocket URL: curl http://localhost:9222/json/version",
+          "3. Copy the 'webSocketDebuggerUrl' value",
+          "4. Replace REPLACE_WITH_ACTUAL_ID in the config above",
+          "5. Use the complete WebSocket URL (e.g., ws://127.0.0.1:9222/devtools/browser/abc123...)"
+        ],
+        "with_authentication": {
+          "description": "WebSocket with custom headers (e.g., authentication)",
+          "args": [
+            "-y",
+            "chrome-devtools-mcp@latest",
+            "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/REPLACE_WITH_ACTUAL_ID",
+            "--wsHeaders={\"Authorization\":\"Bearer YOUR_TOKEN\"}"
+          ],
+          "notes": [
+            "Custom headers passed via --wsHeaders parameter",
+            "Useful for authenticated connections or proxies"
+          ]
+        },
+        "notes": [
+          "New in v0.9.0 (October 2025)",
+          "Alternative to --browserUrl for advanced scenarios",
+          "Direct WebSocket connection without HTTP discovery",
+          "Supports custom headers via --wsHeaders",
+          "WebSocket URL changes on Chrome restart - must update config",
+          "Recommended for: proxy scenarios, custom authentication, advanced networking"
+        ],
+        "comparison_with_browserurl": {
+          "browserUrl": {
+            "pros": ["Simple", "Auto-discovers WebSocket", "No manual URL updates"],
+            "cons": ["No custom headers", "Less control"]
+          },
+          "wsEndpoint": {
+            "pros": ["Custom headers support", "Direct control", "Advanced scenarios"],
+            "cons": ["Manual URL management", "URL changes on restart"]
+          }
+        }
+      },
       "with_custom_port": {
         "description": "Using a different port (e.g., for multiple Chrome instances)",
         "mcpServers": {

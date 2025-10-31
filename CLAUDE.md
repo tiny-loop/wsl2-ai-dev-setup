@@ -34,13 +34,16 @@ Windows Host
 ### Key Technical Points
 
 **MCP Chrome Integration Workaround**
-- chrome-devtools-mcp has documented bugs in WSL2 environments
-- **GitHub Issue #131**: Cannot detect Chrome in WSL2 (https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131)
-- **GitHub Issue #225**: Protocol errors with headless=false (https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225)
+- chrome-devtools-mcp had known limitations in WSL2 environments
+- **GitHub Issue #131** (✅ CLOSED): Cannot detect Chrome in WSL2 (https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131)
+  - **Status**: Workaround methods officially documented
+- **GitHub Issue #225** (✅ CLOSED, Oct 2025): Protocol errors with headless=false (https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225)
+  - **Status**: Fixed in v0.7.0 with Puppeteer improvements
 - **Verified Solution**: Run Chrome externally with `--remote-debugging-port=9222`
 - MCP connects to external Chrome via `--browserUrl=http://localhost:9222` parameter
 - Script: `scripts/start-chrome-debug.sh` implements this workaround
 - Alternative methods documented in `configs/mcp-config.json`
+- **Recommended**: Use chrome-devtools-mcp v0.7.0 or higher
 
 **PATH Configuration**
 - npm global packages: `~/.npm-global/bin`
@@ -65,7 +68,8 @@ dev_setup/
 │   ├── install-gemini.sh      # Gemini CLI + OAuth authentication + MCP configuration
 │   ├── install-chrome.sh      # Chrome + chrome-devtools-mcp
 │   ├── start-chrome-debug.sh  # Chrome remote debugging launcher
-│   └── setup-ssh-key.sh       # SSH key generation (ED25519/RSA)
+│   ├── setup-ssh-key.sh       # SSH key generation (ED25519/RSA)
+│   └── check-versions.sh      # Version checker for installed tools
 ├── configs/
 │   ├── mcp-config.json        # MCP configuration template
 │   └── bashrc-additions       # Environment variables and helper functions
@@ -116,6 +120,10 @@ ssh -T git@github.com
 
 # Comprehensive check (uses function from bashrc-additions)
 check-dev-env
+
+# Check versions and updates (NEW)
+check-versions           # Detailed version check with update recommendations
+bash scripts/check-versions.sh  # Or run script directly
 ```
 
 ### Chrome Remote Debugging
@@ -376,21 +384,32 @@ These scripts are designed for:
 - **Rocky Linux 9+ / RHEL-based distributions** (dnf/yum package manager)
 - Node.js LTS versions (via NVM)
 - Latest stable versions of CLI tools
-- chrome-devtools-mcp@latest (with known WSL2 issues)
+- **chrome-devtools-mcp v0.9.0+** (current latest: v0.9.0, October 2025)
 
 **Package Manager Support:**
 - Debian-based: `apt-get` (Ubuntu, Debian)
 - RHEL-based: `dnf` or `yum` (Rocky Linux, RHEL, CentOS, Fedora)
 
+**chrome-devtools-mcp Version Status:**
+- **Current Latest**: v0.9.0 (October 22, 2025)
+- **Recommended**: v0.9.0+ for WSL2 users
+- **Key Features in v0.9.0**: WebSocket endpoint support, official VM documentation, dependency bundling
+- **Detailed Version History**: See `docs/chrome-devtools-mcp-CHANGELOG.md`
+
 **Known Issues Tracking:**
-- Chrome detection in WSL2: GitHub Issue #131
-- Headless protocol errors: GitHub Issue #225
-- Solutions implemented in this repository are based on community-verified workarounds
+- **Chrome detection in WSL2**: GitHub Issue #131 (✅ CLOSED)
+  - **Status**: ❌ Not fundamentally resolved (architectural limitation)
+  - **Solution**: Use `--browserUrl` or `--wsEndpoint` (official workaround)
+- **Headless protocol errors**: GitHub Issue #225 (✅ CLOSED)
+  - **Status**: ⚠️ Stability improved in v0.7.0+, workaround is official method
+  - **Solution**: External Chrome with `--browserUrl` or `--wsEndpoint`
+- **Repository's approach**: Implements official recommended workarounds
 
 When updating for new versions:
 - Test on clean WSL2 installation
-- Check if GitHub Issues #131 and #225 are resolved
-- Update workarounds if official fixes are released
+- Check chrome-devtools-mcp version (use `check-versions` script)
+- Review CHANGELOG for breaking changes
+- Note that Issues #131 and #225 workarounds remain necessary
 - Update version numbers in documentation
 - Check for breaking changes in dependencies
 - Update NVM install URL if needed (in install-nodejs.sh)

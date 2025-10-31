@@ -15,14 +15,16 @@ Common issues and solutions for WSL2 development environment setup, with verifie
 
 ## Chrome DevTools MCP Issues
 
-### Issue #131: Chrome Not Detected in WSL2
+### Issue #131: Chrome Not Detected in WSL2 (✅ CLOSED)
+
+**Status:** Issue closed - Workaround methods officially documented
 
 **Problem:**
 - MCP cannot find Chrome browser in WSL2
 - Error: "Chrome executable not found"
 - MCP only searches inside WSL, ignores Windows Chrome
 
-**Official Issue:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131
+**Official Issue:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131 (CLOSED)
 
 **Solutions:**
 
@@ -75,14 +77,23 @@ bash scripts/install-chrome.sh
 
 ---
 
-### Issue #225: Protocol Error with headless=false
+### Issue #225: Protocol Error with headless=false (✅ CLOSED)
+
+**Status:** Issue closed (Oct 2025) - Fixed in v0.7.0
 
 **Problem:**
 - Error: `Protocol error (Target.setDiscoverTargets): Target closed`
 - Occurs when `headless: false` in WSL2 Ubuntu
 - Works with `headless: true`
 
-**Official Issue:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225
+**Official Issue:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225 (CLOSED)
+
+**Resolution Status:**
+- **chrome-devtools-mcp v0.7.0+** improved stability through Puppeteer enhancements
+- Enhanced Chrome detection logic and Windows environment variable recognition
+- **Current Latest**: v0.9.0 (October 2025) - WebSocket endpoint support
+- v0.9.0 or higher recommended
+- Detailed history: [CHANGELOG](chrome-devtools-mcp-CHANGELOG.md)
 
 **Root Cause:**
 WSLg (GUI support) not properly configured or Chrome cannot create GUI windows.
@@ -117,6 +128,134 @@ WSLg (GUI support) not properly configured or Chrome cannot create GUI windows.
      ]
    }
    ```
+
+---
+
+### WebSocket Endpoint Method (v0.9.0+)
+
+chrome-devtools-mcp v0.9.0 onwards supports direct WebSocket endpoint specification. This is an alternative to `--browserUrl`.
+
+**When to use:**
+- Custom authentication headers needed
+- Direct control over WebSocket URL required
+- Advanced scenarios (proxies, custom network configuration, etc.)
+
+**How to use:**
+
+**Step 1: Start Chrome**
+```bash
+bash scripts/start-chrome-debug.sh
+```
+
+**Step 2: Get WebSocket URL**
+```bash
+curl http://localhost:9222/json/version
+```
+
+Example output:
+```json
+{
+  "Browser": "Chrome/141.0.7390.76",
+  "Protocol-Version": "1.3",
+  "User-Agent": "Mozilla/5.0...",
+  "V8-Version": "14.1.201.23",
+  "WebKit-Version": "537.36",
+  "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/browser/abc123..."
+}
+```
+
+**Step 3: Configure MCP**
+
+**Basic usage:**
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123..."
+      ]
+    }
+  }
+}
+```
+
+**With authentication headers:**
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123...",
+        "--wsHeaders={\"Authorization\":\"Bearer YOUR_TOKEN\"}"
+      ]
+    }
+  }
+}
+```
+
+**browserUrl vs wsEndpoint comparison:**
+
+| Feature | --browserUrl | --wsEndpoint |
+|---------|-------------|--------------|
+| Ease of use | ⭐ Easy | ⭐⭐ Moderate |
+| Auto WebSocket detection | ✅ Automatic | ❌ Manual input required |
+| Custom headers support | ❌ Not available | ✅ Use --wsHeaders |
+| Recommended for | General users | Advanced users, special requirements |
+
+**Advantages:**
+- Custom authentication support
+- More granular control
+- Useful for proxy/tunneling scenarios
+
+**Disadvantages:**
+- Must manually find/copy WebSocket URL
+- URL may change on Chrome restart
+
+**Tip**: `--browserUrl` is sufficient for most cases. Only use `--wsEndpoint` for special requirements.
+
+---
+
+### SSH Tunneling Method (VM-to-Host)
+
+**v0.9.0 Official Documentation Added**: Official method for connecting from WSL2/VM to Host Chrome
+
+**Problem:**
+Direct connection from WSL2/VM to Host Chrome (Windows) fails due to domain header validation
+
+**Solution:**
+Use SSH tunneling to port forward through localhost
+
+```bash
+# Run in WSL2/VM
+ssh -N -L 127.0.0.1:9222:127.0.0.1:9222 user@host-ip
+```
+
+**Explanation:**
+- `-N`: Don't execute commands (tunneling only)
+- `-L`: Forward local port to remote port
+- `127.0.0.1:9222`: WSL2's port 9222
+- `user@host-ip`: Windows Host user and IP
+
+**Then configure MCP:**
+```json
+{
+  "args": [
+    "chrome-devtools-mcp@latest",
+    "--browserUrl=http://127.0.0.1:9222"
+  ]
+}
+```
+
+**Requirements:**
+- Chrome on Host must be started with `--remote-debugging-port=9222`
+- SSH server must be running on Host (Windows OpenSSH or SSH within WSL2)
+- Related to GitHub Issues #131, #225, #328, #139 official workaround
 
 ---
 

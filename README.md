@@ -196,7 +196,8 @@ dev_setup/
 │   ├── install-gemini.sh         # Gemini CLI 설치
 │   ├── install-chrome.sh         # Chrome 및 MCP 설치
 │   ├── start-chrome-debug.sh     # Chrome 원격 디버깅 시작 스크립트
-│   └── setup-ssh-key.sh          # SSH 키 생성 및 GitHub 설정
+│   ├── setup-ssh-key.sh          # SSH 키 생성 및 GitHub 설정
+│   └── check-versions.sh         # 설치된 도구 버전 확인
 ├── configs/
 │   ├── mcp-config.json           # MCP 설정 예시
 │   └── bashrc-additions          # 환경 변수 및 별칭
@@ -291,18 +292,26 @@ SSH 키(ED25519 또는 RSA)를 생성하고 GitHub 설정 방법을 안내합니
 
 ### 왜 이런 설정이 필요한가요?
 
-`chrome-devtools-mcp` 패키지는 WSL2 환경에서 **문서화된 버그**가 있습니다:
+`chrome-devtools-mcp` 패키지는 WSL2 환경에서 **아키텍처 제한사항**이 있습니다:
 
-- **GitHub Issue #131**: WSL2에서 Chrome을 감지하지 못함
+- **GitHub Issue #131** (✅ CLOSED): WSL2에서 Chrome을 감지하지 못함
   - https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131
-- **GitHub Issue #225**: `headless=false` 사용 시 프로토콜 에러
+  - **상태**: ❌ 근본 해결 안 됨 (아키텍처 제한)
+  - **해결**: `--browserUrl` 또는 `--wsEndpoint` 사용 (공식 권장)
+- **GitHub Issue #225** (✅ CLOSED, 2025년 10월): `headless=false` 사용 시 프로토콜 에러
   - https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225
+  - **상태**: ⚠️ 외부 Chrome 사용 시 우회 가능
+  - **해결**: v0.7.0+ 안정성 향상, workaround가 공식 방법
 
-**우리의 해결책** (커뮤니티에서 검증됨):
+**공식 권장 방법** (v0.9.0 기준):
 
 1. Chrome을 원격 디버깅 모드로 별도 실행
-2. MCP를 `--browserUrl` 파라미터로 외부 Chrome에 연결
-3. 이 방법으로 두 버그를 모두 회피
+2. MCP를 `--browserUrl` 또는 `--wsEndpoint`로 외부 Chrome에 연결
+3. 이 방법으로 안정적인 연결 보장
+4. **현재 최신**: chrome-devtools-mcp v0.9.0 (2025년 10월)
+5. **권장**: v0.9.0 이상 사용 (WebSocket endpoint 지원)
+
+> 📖 **자세한 버전 정보**: [chrome-devtools-mcp CHANGELOG](docs/chrome-devtools-mcp-CHANGELOG.md) 참고
 
 ### Chrome MCP 시작하기
 
@@ -362,12 +371,62 @@ bash scripts/start-chrome-debug.sh
 `configs/mcp-config.json` 파일에서 다음 내용을 참고하세요:
 - 방법 2: `--executable-path`로 Windows Chrome 직접 사용
 - 방법 3: `--headless` 모드로 WSL Chrome 사용
+- **방법 4 (v0.9.0+)**: `--wsEndpoint`로 WebSocket 연결 (아래 참고)
 - Windows 11 네트워크 미러링 설정
 - 여러 Chrome 인스턴스 설정
 
 **설정 파일 위치:**
 - Claude Code: `~/.config/claude/config.json`
 - Gemini CLI: `~/.gemini/settings.json`
+
+---
+
+### WebSocket Endpoint 방법 (v0.9.0+)
+
+chrome-devtools-mcp v0.9.0부터 WebSocket endpoint를 직접 지정할 수 있습니다:
+
+**1. WebSocket URL 확인**:
+```bash
+curl http://localhost:9222/json/version
+```
+
+출력 예시:
+```json
+{
+  "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/browser/abc123..."
+}
+```
+
+**2. MCP 설정**:
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123..."
+      ]
+    }
+  }
+}
+```
+
+**3. 인증이 필요한 경우** (선택사항):
+```json
+{
+  "args": [
+    "chrome-devtools-mcp@latest",
+    "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123...",
+    "--wsHeaders={\"Authorization\":\"Bearer YOUR_TOKEN\"}"
+  ]
+}
+```
+
+**browserUrl vs wsEndpoint**:
+- `--browserUrl`: 간단, 자동으로 WebSocket 탐지
+- `--wsEndpoint`: 직접 지정, 커스텀 헤더 지원, 고급 시나리오용
 
 ## 환경 설정
 
@@ -424,6 +483,7 @@ check-chrome-debug              # Chrome 실행 상태 확인 (함수)
 
 ```bash
 check-dev-env                   # 모든 컴포넌트 상태 표시
+check-versions                  # 설치된 도구 버전 확인 및 업데이트 알림
 ```
 
 ## VSCode 통합
@@ -611,7 +671,35 @@ MCP 설정도 새 포트에 맞게 업데이트하세요.
 - SSH 키는 `~/.ssh/`에 적절한 권한(private key는 600)으로 보관하세요
 - 인터넷에서 받은 스크립트를 실행할 때 주의하세요
 
+## 버전 확인
+
+설치된 도구들의 버전을 확인하고 업데이트가 필요한지 자동으로 확인할 수 있습니다:
+
+```bash
+# 명령줄에서
+check-versions
+
+# 또는 setup.sh 메뉴에서
+bash setup.sh
+# 옵션 8 선택: Check installed versions
+```
+
+이 명령은 다음을 확인합니다:
+- NVM, Node.js, npm 버전
+- Claude Code CLI 및 Gemini CLI 버전
+- Google Chrome 버전
+- chrome-devtools-mcp 버전 (v0.7.0 이상 권장)
+- Chrome 원격 디버깅 상태
+
+각 도구에 대해 최신 버전과 비교하고, 업데이트가 필요한 경우 업데이트 명령어를 표시합니다.
+
 ## 업데이트
+
+### 버전 확인 먼저
+
+```bash
+check-versions                 # 어떤 도구를 업데이트해야 하는지 확인
+```
 
 ### Node.js 업데이트
 
