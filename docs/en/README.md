@@ -63,7 +63,8 @@ dev_setup/
 │   ├── install-gemini.sh         # Gemini CLI installation
 │   ├── install-chrome.sh         # Chrome and MCP installation
 │   ├── start-chrome-debug.sh     # Chrome remote debugging launcher
-│   └── setup-ssh-key.sh          # SSH key generation and GitHub setup
+│   ├── setup-ssh-key.sh          # SSH key generation and GitHub setup
+│   └── check-versions.sh         # Version checker for installed tools
 ├── configs/
 │   ├── mcp-config.json           # MCP configuration example
 │   └── bashrc-additions          # Environment variables and aliases
@@ -154,18 +155,26 @@ Generates SSH keys (ED25519 or RSA) and provides GitHub setup instructions.
 
 ### Why This Setup?
 
-The `chrome-devtools-mcp` package has **documented bugs** in WSL2 environments:
+The `chrome-devtools-mcp` package has **architectural limitations** in WSL2 environments:
 
-- **GitHub Issue #131**: Cannot detect Chrome in WSL2
+- **GitHub Issue #131** (✅ CLOSED): Cannot detect Chrome in WSL2
   - https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131
-- **GitHub Issue #225**: Protocol errors with `headless=false`
+  - **Status**: ❌ Not fundamentally resolved (architectural limitation)
+  - **Resolution**: Use `--browserUrl` or `--wsEndpoint` (officially recommended)
+- **GitHub Issue #225** (✅ CLOSED, Oct 2025): Protocol errors with `headless=false`
   - https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225
+  - **Status**: ⚠️ Workaround available via external Chrome
+  - **Resolution**: v0.7.0+ stability improvements, workaround is official method
 
-**Our Solution** (verified by the community):
+**Official Recommended Method** (as of v0.9.0):
 
 1. Running Chrome separately with remote debugging enabled
-2. Connecting MCP to the external Chrome instance via `--browserUrl` parameter
-3. This completely avoids both bugs
+2. Connecting MCP to external Chrome via `--browserUrl` or `--wsEndpoint`
+3. This ensures stable connections
+4. **Current Latest**: chrome-devtools-mcp v0.9.0 (October 2025)
+5. **Recommended**: Use v0.9.0 or higher (WebSocket endpoint support)
+
+> 📖 **Detailed Version Info**: See [chrome-devtools-mcp CHANGELOG](chrome-devtools-mcp-CHANGELOG.md)
 
 ### Starting Chrome for MCP
 
@@ -225,12 +234,62 @@ Configuration is already done, but if you want to change it manually:
 See `configs/mcp-config.json` for:
 - Method 2: Using Windows Chrome directly with `--executable-path`
 - Method 3: Using WSL Chrome with `--headless` mode
+- **Method 4 (v0.9.0+)**: WebSocket connection with `--wsEndpoint` (see below)
 - Windows 11 network mirroring configuration
 - Multiple Chrome instances setup
 
 **Configuration File Locations:**
 - Claude Code: `~/.config/claude/config.json`
 - Gemini CLI: `~/.gemini/settings.json`
+
+---
+
+### WebSocket Endpoint Method (v0.9.0+)
+
+chrome-devtools-mcp v0.9.0 onwards supports direct WebSocket endpoint specification:
+
+**1. Get WebSocket URL**:
+```bash
+curl http://localhost:9222/json/version
+```
+
+Example output:
+```json
+{
+  "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/browser/abc123..."
+}
+```
+
+**2. Configure MCP**:
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123..."
+      ]
+    }
+  }
+}
+```
+
+**3. With Authentication** (optional):
+```json
+{
+  "args": [
+    "chrome-devtools-mcp@latest",
+    "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123...",
+    "--wsHeaders={\"Authorization\":\"Bearer YOUR_TOKEN\"}"
+  ]
+}
+```
+
+**browserUrl vs wsEndpoint**:
+- `--browserUrl`: Simple, auto-detects WebSocket
+- `--wsEndpoint`: Direct specification, custom headers support, for advanced scenarios
 
 ## Environment Configuration
 
@@ -287,6 +346,7 @@ check-chrome-debug              # Check if Chrome is running (function)
 
 ```bash
 check-dev-env                   # Show status of all components
+check-versions                  # Check installed tool versions and updates
 ```
 
 ## VSCode Integration
@@ -474,7 +534,35 @@ You can run multiple Chrome instances on different ports for different purposes.
 - SSH keys should remain in `~/.ssh/` with proper permissions (600 for private keys)
 - Be cautious when running scripts from the internet
 
+## Version Check
+
+Check installed tool versions and see if updates are available:
+
+```bash
+# From command line
+check-versions
+
+# Or from setup.sh menu
+bash setup.sh
+# Select option 8: Check installed versions
+```
+
+This command checks:
+- NVM, Node.js, and npm versions
+- Claude Code CLI and Gemini CLI versions
+- Google Chrome version
+- chrome-devtools-mcp version (v0.7.0+ recommended)
+- Chrome remote debugging status
+
+It compares each tool with the latest version and shows update commands if needed.
+
 ## Updating
+
+### Check Versions First
+
+```bash
+check-versions                 # See what needs updating
+```
 
 ### Update Node.js
 

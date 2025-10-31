@@ -17,14 +17,16 @@ WSL2 개발 환경 설정 중 발생하는 일반적인 문제와 해결 방법�
 
 ## Chrome DevTools MCP 문제
 
-### Issue #131: WSL2에서 Chrome 감지 실패
+### Issue #131: WSL2에서 Chrome 감지 실패 (✅ CLOSED)
+
+**상태:** 이슈 종료 - Workaround 방법들이 공식화됨
 
 **문제:**
 - MCP가 WSL2 환경에서 Chrome 브라우저를 찾지 못함
 - 에러: "Chrome executable not found"
 - MCP가 WSL 내부만 확인하고 Windows Chrome을 인식하지 못함
 
-**공식 이슈:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131
+**공식 이슈:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/131 (CLOSED)
 
 **해결 방법:**
 
@@ -77,14 +79,23 @@ bash scripts/install-chrome.sh
 
 ---
 
-### Issue #225: headless=false 사용 시 프로토콜 에러
+### Issue #225: headless=false 사용 시 프로토콜 에러 (✅ CLOSED)
+
+**상태:** 이슈 종료 (2025년 10월) - v0.7.0에서 해결됨
 
 **문제:**
 - 에러: `Protocol error (Target.setDiscoverTargets): Target closed`
 - WSL2 Ubuntu에서 `headless: false` 설정 시 발생
 - `headless: true`로 설정하면 작동함
 
-**공식 이슈:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225
+**공식 이슈:** https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/225 (CLOSED)
+
+**해결 상태:**
+- **chrome-devtools-mcp v0.7.0+**에서 Puppeteer 개선으로 안정성 향상
+- Chrome 감지 로직 향상 및 Windows 환경 변수 인식 개선
+- **현재 최신**: v0.9.0 (2025년 10월) - WebSocket endpoint 지원
+- v0.9.0 이상 사용 권장
+- 자세한 내역: [CHANGELOG](chrome-devtools-mcp-CHANGELOG.md)
 
 **원인:**
 WSLg(GUI 지원)가 제대로 설정되지 않았거나 Chrome이 GUI 모드로 실행되지 않음
@@ -119,6 +130,134 @@ WSLg(GUI 지원)가 제대로 설정되지 않았거나 Chrome이 GUI 모드로 
      ]
    }
    ```
+
+---
+
+### WebSocket Endpoint 방법 (v0.9.0+)
+
+chrome-devtools-mcp v0.9.0부터 WebSocket endpoint를 직접 지정할 수 있습니다. `--browserUrl`의 대안으로 사용 가능합니다.
+
+**언제 사용하나요?**
+- 커스텀 인증 헤더가 필요한 경우
+- 직접 WebSocket URL을 제어하고 싶은 경우
+- 고급 시나리오 (프록시, 커스텀 네트워크 설정 등)
+
+**사용 방법:**
+
+**1단계: Chrome 시작**
+```bash
+bash scripts/start-chrome-debug.sh
+```
+
+**2단계: WebSocket URL 확인**
+```bash
+curl http://localhost:9222/json/version
+```
+
+출력 예시:
+```json
+{
+  "Browser": "Chrome/141.0.7390.76",
+  "Protocol-Version": "1.3",
+  "User-Agent": "Mozilla/5.0...",
+  "V8-Version": "14.1.201.23",
+  "WebKit-Version": "537.36",
+  "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/browser/abc123..."
+}
+```
+
+**3단계: MCP 설정**
+
+**기본 사용:**
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123..."
+      ]
+    }
+  }
+}
+```
+
+**인증 헤더 포함:**
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--wsEndpoint=ws://127.0.0.1:9222/devtools/browser/abc123...",
+        "--wsHeaders={\"Authorization\":\"Bearer YOUR_TOKEN\"}"
+      ]
+    }
+  }
+}
+```
+
+**browserUrl vs wsEndpoint 비교:**
+
+| 특징 | --browserUrl | --wsEndpoint |
+|-----|-------------|--------------|
+| 사용 난이도 | ⭐ 쉬움 | ⭐⭐ 중간 |
+| 자동 WebSocket 탐지 | ✅ 자동 | ❌ 수동 입력 필요 |
+| 커스텀 헤더 지원 | ❌ 없음 | ✅ --wsHeaders 사용 |
+| 권장 용도 | 일반 사용자 | 고급 사용자, 특수 요구사항 |
+
+**장점:**
+- 커스텀 인증 지원
+- 더 세밀한 제어
+- 프록시/터널링 시나리오에 유용
+
+**단점:**
+- WebSocket URL을 수동으로 확인/복사해야 함
+- Chrome 재시작 시 URL 변경될 수 있음
+
+**Tip**: 대부분의 경우 `--browserUrl`로 충분합니다. 특별한 요구사항이 있을 때만 `--wsEndpoint`를 사용하세요.
+
+---
+
+### SSH Tunneling 방법 (VM-to-Host)
+
+**v0.9.0 공식 문서 추가**: WSL2/VM에서 Host의 Chrome에 연결하는 공식 방법
+
+**문제:**
+WSL2/VM 내부에서 Host의 Chrome(Windows)에 직접 연결 시 도메인 헤더 검증 실패
+
+**해결:**
+SSH tunneling을 사용하여 localhost로 포트 포워딩
+
+```bash
+# WSL2/VM에서 실행
+ssh -N -L 127.0.0.1:9222:127.0.0.1:9222 user@host-ip
+```
+
+**설명:**
+- `-N`: 명령어 실행 안 함 (터널링만)
+- `-L`: 로컬 포트를 원격 포트로 포워딩
+- `127.0.0.1:9222`: WSL2의 9222 포트
+- `user@host-ip`: Windows Host의 사용자 및 IP
+
+**그 후 MCP 설정:**
+```json
+{
+  "args": [
+    "chrome-devtools-mcp@latest",
+    "--browserUrl=http://127.0.0.1:9222"
+  ]
+}
+```
+
+**참고:**
+- Host에서 Chrome을 `--remote-debugging-port=9222`로 시작해야 함
+- SSH 서버가 Host에 실행 중이어야 함 (Windows OpenSSH 또는 WSL2 내 SSH)
+- GitHub Issue #131, #225, #328, #139 관련 공식 workaround
 
 ---
 

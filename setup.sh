@@ -90,7 +90,8 @@ main() {
     echo "5) Chrome + MCP setup"
     echo "6) SSH Key setup"
     echo "7) Custom selection"
-    read -p "Enter your choice [1-7]: " choice
+    echo "8) Check installed versions"
+    read -p "Enter your choice [1-8]: " choice
 
     case $choice in
         1)
@@ -129,6 +130,9 @@ main() {
             [[ "$install_gemini" =~ ^[Yy]$ ]] && bash "$SCRIPT_DIR/scripts/install-gemini.sh"
             [[ "$install_chrome" =~ ^[Yy]$ ]] && bash "$SCRIPT_DIR/scripts/install-chrome.sh"
             [[ "$setup_ssh" =~ ^[Yy]$ ]] && bash "$SCRIPT_DIR/scripts/setup-ssh-key.sh"
+            ;;
+        8)
+            bash "$SCRIPT_DIR/scripts/check-versions.sh"
             ;;
         *)
             error "Invalid choice"
