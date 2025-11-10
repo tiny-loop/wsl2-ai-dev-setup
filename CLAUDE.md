@@ -59,7 +59,7 @@ Windows Host
 ## Project Structure
 
 ```
-dev_setup/
+wsl2-ai-dev-setup/
 ├── setup.sh                   # Main orchestration script (interactive menu)
 ├── scripts/                   # Individual installation scripts
 │   ├── common.sh              # Common functions (OS detection, package manager abstraction)
@@ -74,9 +74,12 @@ dev_setup/
 │   ├── mcp-config.json        # MCP configuration template
 │   └── bashrc-additions       # Environment variables and helper functions
 ├── docs/
-│   └── troubleshooting.md     # Comprehensive troubleshooting guide
+│   ├── troubleshooting.md     # Comprehensive troubleshooting guide
+│   ├── chrome-devtools-mcp-CHANGELOG.md  # chrome-devtools-mcp version history
+│   └── en/                    # English documentation
 ├── README.md                  # User-facing documentation
-└── CLAUDE.md                  # This file
+├── CLAUDE.md                  # This file
+└── LICENSE                    # MIT License
 ```
 
 ## Common Development Commands

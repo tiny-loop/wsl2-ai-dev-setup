@@ -109,7 +109,7 @@ if command_exists claude; then
     echo -e "  Installed: ${GREEN}${CLAUDE_VERSION}${NC}"
 
     # Try to get latest version
-    CLAUDE_LATEST=$(npm view @anthropic/claude-code version 2>/dev/null || echo "unknown")
+    CLAUDE_LATEST=$(npm view @anthropic-ai/claude-code version 2>/dev/null || echo "unknown")
     if [[ "$CLAUDE_LATEST" != "unknown" ]] && [[ "$CLAUDE_VERSION" != "unknown" ]]; then
         echo -e "  Latest: ${CLAUDE_LATEST}"
         if [[ "$CLAUDE_VERSION" < "$CLAUDE_LATEST" ]]; then
@@ -133,7 +133,7 @@ if command_exists gemini; then
     echo -e "  Installed: ${GREEN}${GEMINI_VERSION}${NC}"
 
     # Try to get latest version
-    GEMINI_LATEST=$(npm view @google/generative-ai-cli version 2>/dev/null || echo "unknown")
+    GEMINI_LATEST=$(npm view @google/gemini-cli version 2>/dev/null || echo "unknown")
     if [[ "$GEMINI_LATEST" != "unknown" ]] && [[ "$GEMINI_VERSION" != "unknown" ]]; then
         echo -e "  Latest: ${GEMINI_LATEST}"
         if [[ "$GEMINI_VERSION" < "$GEMINI_LATEST" ]]; then
@@ -238,7 +238,7 @@ fi
 
 if command_exists claude; then
     CLAUDE_VERSION=$(claude --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1 || echo "0")
-    CLAUDE_LATEST=$(npm view @anthropic/claude-code version 2>/dev/null || echo "0")
+    CLAUDE_LATEST=$(npm view @anthropic-ai/claude-code version 2>/dev/null || echo "0")
     if [[ "$CLAUDE_VERSION" != "0" ]] && [[ "$CLAUDE_LATEST" != "0" ]] && [[ "$CLAUDE_VERSION" < "$CLAUDE_LATEST" ]]; then
         echo -e "${YELLOW}⚠ Claude Code CLI update available${NC}"
         NEEDS_UPDATE=1
@@ -247,7 +247,7 @@ fi
 
 if command_exists gemini; then
     GEMINI_VERSION=$(gemini --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1 || echo "0")
-    GEMINI_LATEST=$(npm view @google/generative-ai-cli version 2>/dev/null || echo "0")
+    GEMINI_LATEST=$(npm view @google/gemini-cli version 2>/dev/null || echo "0")
     if [[ "$GEMINI_VERSION" != "0" ]] && [[ "$GEMINI_LATEST" != "0" ]] && [[ "$GEMINI_VERSION" < "$GEMINI_LATEST" ]]; then
         echo -e "${YELLOW}⚠ Gemini CLI update available${NC}"
         NEEDS_UPDATE=1

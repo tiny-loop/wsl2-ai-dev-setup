@@ -145,9 +145,13 @@ main() {
     log "Please run 'source ~/.bashrc' or restart your terminal to apply changes"
     log ""
     log "Next steps:"
-    log "1. Configure MCP: Edit Claude Code config with settings from configs/mcp-config.json"
-    log "2. Start Chrome for debugging: bash scripts/start-chrome-debug.sh"
-    log "3. Check the README.md for more information"
+    log "1. MCP configuration has been automatically applied"
+    log "   - Claude Code: ~/.config/claude/config.json"
+    log "   - Gemini CLI: ~/.gemini/settings.json"
+    log "2. Start Chrome for MCP: bash scripts/start-chrome-debug.sh"
+    log "3. Verify setup: check-dev-env"
+    log "4. Check versions: check-versions"
+    log "5. See README.md for more information"
 }
 
 # Run main function

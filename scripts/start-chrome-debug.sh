@@ -4,21 +4,20 @@
 # This script starts Google Chrome with remote debugging enabled on port 9222
 # Required for chrome-devtools-mcp to work properly
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Source common functions
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    echo "ERROR: common.sh not found in $SCRIPT_DIR"
+    exit 1
+fi
+
+# Override log function to add Chrome Debug prefix
 log() {
     echo -e "${GREEN}[Chrome Debug]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 # Configuration

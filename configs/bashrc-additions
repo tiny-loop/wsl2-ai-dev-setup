@@ -53,11 +53,18 @@ export DISPLAY="${DISPLAY:-:0}"
 # export EDITOR="vim"           # For vim
 
 # ============================================
+# Dev Setup Directory
+# ============================================
+
+# Set the dev setup directory (adjust if you cloned to a different location)
+export DEV_SETUP_DIR="${DEV_SETUP_DIR:-$HOME/my_work/wsl2-ai-dev-setup}"
+
+# ============================================
 # Useful Aliases
 # ============================================
 
 # Chrome debugging
-alias chrome-debug='bash ~/my_work/dev_setup/scripts/start-chrome-debug.sh'
+alias chrome-debug='bash $DEV_SETUP_DIR/scripts/start-chrome-debug.sh'
 alias chrome-stop='pkill -f "chrome.*remote-debugging-port"'
 
 # Development shortcuts
@@ -115,11 +122,12 @@ npm-update-global() {
 
 # Check versions of all installed tools
 check-versions() {
-    if [ -f ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh ]; then
-        bash ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh
+    if [ -f "$DEV_SETUP_DIR/scripts/check-versions.sh" ]; then
+        bash "$DEV_SETUP_DIR/scripts/check-versions.sh"
     else
         echo "Error: check-versions.sh not found"
-        echo "Expected location: ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh"
+        echo "Expected location: $DEV_SETUP_DIR/scripts/check-versions.sh"
+        echo "Set DEV_SETUP_DIR environment variable to your installation path"
     fi
 }
 

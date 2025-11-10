@@ -116,9 +116,9 @@ wsl -d Ubuntu-22.04
 
 **Git이 이미 설치되어 있는 경우:**
 ```bash
-# 저장소 클론
-git clone https://github.com/<your-username>/dev_setup.git ~/my_work/dev_setup
-cd ~/my_work/dev_setup
+# 저장소 클론 (저장소 URL을 실제 저장소로 변경하세요)
+git clone https://github.com/YOUR_USERNAME/wsl2-ai-dev-setup.git ~/my_work/wsl2-ai-dev-setup
+cd ~/my_work/wsl2-ai-dev-setup
 ```
 
 **Git이 설치되어 있지 않은 경우:**
@@ -148,9 +148,9 @@ Git을 사용하지 않는 경우:
 # Windows 다운로드 폴더에서 복사
 mkdir -p ~/my_work
 cd ~/my_work
-unzip /mnt/c/Users/<your-windows-username>/Downloads/dev_setup-main.zip
-mv dev_setup-main dev_setup
-cd dev_setup
+unzip /mnt/c/Users/<your-windows-username>/Downloads/wsl2-ai-dev-setup-main.zip
+mv wsl2-ai-dev-setup-main wsl2-ai-dev-setup
+cd wsl2-ai-dev-setup
 ```
 
 #### 방법 3: 직접 생성
@@ -158,8 +158,8 @@ cd dev_setup
 이 저장소를 fork하거나 내용을 복사하여 직접 만든 경우:
 
 ```bash
-mkdir -p ~/my_work/dev_setup
-cd ~/my_work/dev_setup
+mkdir -p ~/my_work/wsl2-ai-dev-setup
+cd ~/my_work/wsl2-ai-dev-setup
 # 파일들을 여기에 복사
 ```
 
@@ -169,7 +169,7 @@ cd ~/my_work/dev_setup
 
 1. 저장소 디렉토리로 이동:
 ```bash
-cd ~/my_work/dev_setup
+cd ~/my_work/wsl2-ai-dev-setup
 ```
 
 2. 메인 설치 스크립트를 실행합니다:
@@ -187,7 +187,7 @@ source ~/.bashrc
 ## 프로젝트 구조
 
 ```
-dev_setup/
+wsl2-ai-dev-setup/
 ├── setup.sh                      # 메인 설치 오케스트레이션 스크립트
 ├── scripts/
 │   ├── common.sh                 # 공통 함수 (OS 감지, 패키지 관리자 추상화)
@@ -203,12 +203,15 @@ dev_setup/
 │   └── bashrc-additions          # 환경 변수 및 별칭
 ├── docs/
 │   ├── troubleshooting.md        # 종합 문제 해결 가이드 (한국어)
+│   ├── chrome-devtools-mcp-CHANGELOG.md  # chrome-devtools-mcp 버전 히스토리
 │   └── en/                       # 영어 문서
 │       ├── README.md
 │       ├── CLAUDE.md
-│       └── troubleshooting.md
+│       ├── troubleshooting.md
+│       └── chrome-devtools-mcp-CHANGELOG.md
 ├── README.md                     # 이 파일 (한국어)
-└── CLAUDE.md                     # Claude Code용 가이드 (한국어)
+├── CLAUDE.md                     # Claude Code용 가이드 (한국어)
+└── LICENSE                       # MIT 라이선스
 ```
 
 ## 설치 가이드
@@ -759,4 +762,10 @@ npm update -g @anthropic-ai/claude-code
 
 ## 라이선스
 
-이 스크립트는 개인 사용을 위해 있는 그대로 제공됩니다. 필요에 따라 수정하고 배포하세요.
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+**간단히 말하면:**
+- ✅ 상업적 사용 가능
+- ✅ 수정 및 배포 가능
+- ✅ 개인 및 비공개 사용 가능
+- ⚠️ 원본 저작권 고지 및 라이선스 포함 필수
