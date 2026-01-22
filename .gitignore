@@ -51,3 +51,6 @@ id_ed25519*
 # Backup files
 *.bak
 *.backup
+
+# Generated configuration files
+configs/generated/

@@ -103,6 +103,18 @@ check-dev-env() {
     echo ""
     echo "SSH Keys:"
     ls -1 ~/.ssh/id_* 2>/dev/null | grep -v '.pub' || echo "No SSH keys found"
+    echo ""
+    # PATH 오염 검사
+    if echo "$PATH" | grep -q "/mnt/c"; then
+        echo "⚠️  경고: Windows PATH가 Linux에 포함됨 (충돌 가능)"
+        echo "   해결: appendWindowsPath=false 설정 적용"
+    else
+        echo "✓ PATH 설정 정상 (Windows PATH 격리됨)"
+    fi
+    # 파일 시스템 위치 검사
+    if echo "$(pwd)" | grep -q "^/mnt/"; then
+        echo "⚠️  경고: 현재 Windows 파일시스템에서 작업 중 (성능 저하)"
+    fi
 }
 
 # Update all global npm packages
@@ -122,6 +134,12 @@ check-versions() {
         echo "Expected location: ~/my_work/wsl2-ai-dev-setup/scripts/check-versions.sh"
     fi
 }
+
+# ============================================
+# 환경 변수 전달 (WSLENV) - Windows ↔ Linux 간 변수 공유
+# ============================================
+# 사용법: Windows에서 setx WSLENV "MY_VAR/p" 설정 후 WSL에서 사용
+# /p 플래그: 경로 자동 변환 (C:\path → /mnt/c/path)
 
 # ============================================
 # Display message on terminal start (optional)
