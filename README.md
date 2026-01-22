@@ -1,44 +1,234 @@
-# WSL2 개발 환경 설정
+# WSL2 AI 개발 환경 설정
 
-Windows WSL2에서 Claude Code, Gemini CLI, Chrome MCP 통합 및 VSCode를 포함한 완전한 개발 환경을 자동으로 설정하는 스크립트 모음입니다.
+Windows WSL2에서 AI IDE (Claude Desktop, Cursor 등) 및 개발 도구를 위한 최적화된 환경을 자동으로 구성하는 스크립트 모음입니다.
 
 > **English version**: See [docs/en/README.md](docs/en/README.md)
 
+## ✨ 주요 특징
+
+- **🎯 3단계 설치 프로세스** - Windows 설정 → WSL 환경 → 개발 도구 순서로 명확한 단계
+- **🔒 Windows PATH 오염 방지** - `appendWindowsPath=false`로 충돌 방지, VS Code 경로만 선택적 추가
+- **🌐 Mirrored Networking** - Windows 11에서 AI IDE의 Browser Subagent 완벽 지원
+- **⚡ 자동 메모리 관리** - WSL2 메모리 자동 회수로 시스템 안정성 향상
+- **📦 선택적 설치** - Node.js, Chrome, Claude Code, Gemini CLI 등 필요한 것만 설치
+
 ## 목차
 
-- [개요](#개요)
+- [빠른 시작](#-빠른-시작)
+- [설치 프로세스](#-설치-프로세스)
 - [사전 요구사항](#사전-요구사항)
-- [시작하기 전에](#시작하기-전에)
-  - [1단계: Windows에서 WSL2 설정](#1단계-windows에서-wsl2-설정-최초-1회)
-  - [2단계: WSL2 내부에서 저장소 가져오기](#2단계-wsl2-내부에서-저장소-가져오기)
-- [빠른 시작](#빠른-시작)
-- [프로젝트 구조](#프로젝트-구조)
-- [설치 가이드](#설치-가이드)
-- [Chrome 원격 디버깅 & MCP](#chrome-원격-디버깅--mcp)
-- [환경 설정](#환경-설정)
-- [사용법](#사용법)
-- [VSCode 통합](#vscode-통합)
-- [문제 해결](#문제-해결)
-- [커스터마이징](#커스터마이징)
-- [보안 주의사항](#보안-주의사항)
-- [업데이트](#업데이트)
-- [추가 자료](#추가-자료)
+- [상세 가이드](#상세-가이드)
+- [문제 해결](#-문제-해결)
+- [추가 정보](#-추가-정보)
 
-## 개요
+## 🚀 빠른 시작
 
-이 저장소는 WSL2에서 다음 도구들을 자동으로 설치하고 설정합니다:
+### 1. 저장소 클론
 
-- **Node.js** (NVM 사용) - JavaScript/TypeScript 개발 환경
-- **Claude Code CLI** - Anthropic의 AI 코딩 도구
-- **Gemini CLI** - Google의 AI CLI 도구
-- **Google Chrome** - WSLg GUI 지원
-- **MCP (Model Context Protocol)** - chrome-devtools-mcp 통합
-- **SSH 키 생성** - GitHub 연동
-- **VSCode Remote-WSL** - 통합 개발 환경
+```bash
+# WSL2 터미널에서 실행
+git clone https://github.com/your-repo/wsl2-ai-dev-setup.git
+cd wsl2-ai-dev-setup
+```
+
+### 2. 메인 설치 스크립트 실행
+
+```bash
+./setup.sh
+```
+
+메뉴에서 다음 중 선택:
+- **단계별 설치** (권장): Step 1 → 2 → 3 순서대로 진행
+- **전체 자동 설치**: 모든 단계를 순차 실행
+
+## 📋 설치 프로세스
+
+### Step 1: Windows 호스트 설정 (.wslconfig)
+
+```bash
+bash scripts/setup-1-windows.sh
+```
+
+**수행 작업:**
+- Windows 사용자 홈 자동 탐지
+- 시스템 메모리 및 Windows 버전 확인
+- WSL2 메모리/CPU 할당량 설정
+- Mirrored Networking 활성화 (Windows 11)
+- `.wslconfig` 파일을 Windows 홈에 **자동 복사** ✅
+
+**완료 후:**
+```powershell
+# Windows PowerShell에서 실행
+wsl --shutdown
+```
+그 다음 WSL을 다시 시작하고 Step 2로 진행
+
+### Step 2: WSL 기본 환경 설정
+
+```bash
+bash scripts/setup-2-wsl-base.sh
+```
+
+**수행 작업:**
+- `/etc/wsl.conf` 설정 (appendWindowsPath=false)
+- Git 전역 설정 (CRLF, filemode)
+- `~/.bashrc` 환경 변수 (VS Code 경로만 추가)
+
+**완료 후:**
+```bash
+source ~/.bashrc
+```
+```powershell
+# Windows PowerShell에서 다시 실행
+wsl --shutdown
+```
+
+### Step 3: 개발 도구 설치 (선택적)
+
+```bash
+bash scripts/setup-3-dev-tools.sh
+```
+
+**설치 가능한 도구:**
+1. Node.js + npm (NVM 사용)
+2. Chrome (MCP 디버깅용)
+3. Claude Code / Cursor CLI
+4. Gemini CLI
+5. SSH Key 설정
+
+필요한 것만 선택하여 설치 가능합니다.
+
+## 사전 요구사항
+
+### Windows 측
+
+- **Windows 11 22H2 이상 (권장)** - Mirrored Networking 및 고급 기능 지원
+  - Windows 10도 지원하지만 일부 기능 제한
+- WSL2 활성화 및 최신 버전
+- 인터넷 연결
+
+### WSL2 배포판
+
+지원 운영체제:
+- **Ubuntu 20.04+** / Debian 기반 배포판 (권장)
+- Rocky Linux 9+ / RHEL 기반 배포판
+
+WSL2 버전 확인:
+```bash
+wsl --version  # Windows PowerShell에서
+```
+
+## 상세 가이드
+
+### 주요 최적화 기능
+
+#### 1. Windows PATH 오염 방지
+
+**문제:**
+- `appendWindowsPath=true` (기본값)일 때, Windows의 모든 실행 파일이 WSL PATH에 추가됨
+- Node.js, Python 등이 Windows/WSL 양쪽에 설치되면 충돌 발생
+- 성능 저하 및 명령어 실행 오류
+
+**해결:**
+```ini
+# /etc/wsl.conf
+[interop]
+appendWindowsPath=false  # PATH 오염 차단
+```
+
+**VS Code 경로 복구:**
+```bash
+# ~/.bashrc에 VS Code 경로만 추가
+export PATH="$PATH:/mnt/c/Users/<사용자명>/AppData/Local/Programs/Microsoft VS Code/bin"
+```
+
+#### 2. Mirrored Networking (Windows 11 전용)
+
+AI IDE (Cursor, Claude Desktop, Antigravity)의 Browser Subagent가 Windows Chrome에 접근하려면 필수:
+
+```ini
+# .wslconfig
+[wsl2]
+networkingMode=mirrored  # Windows와 동일 IP 사용
+```
+
+**효과:**
+- WSL → Windows Chrome (`localhost:9222`) 접근 가능
+- VPN 연결 자동 공유
+- IPv6 완전 지원
+
+#### 3. 자동 메모리 관리
+
+```ini
+# .wslconfig (Windows 11)
+[experimental]
+autoMemoryReclaim=gradual  # 미사용 메모리 자동 반환
+sparseVhd=true            # 디스크 공간 자동 축소
+```
+
+### 프로젝트 구조
+
+```
+wsl2-ai-dev-setup/
+├── setup.sh                      # 메인 설치 스크립트 (인터랙티브)
+├── scripts/
+│   ├── setup-1-windows.sh        # Step 1: Windows 호스트 설정
+│   ├── setup-2-wsl-base.sh       # Step 2: WSL 기본 환경
+│   ├── setup-3-dev-tools.sh      # Step 3: 개발 도구 설치
+│   ├── install-nodejs.sh         # Node.js 설치 (NVM)
+│   ├── install-chrome.sh         # Chrome 설치
+│   ├── install-claude-code.sh    # Claude Code 설치
+│   ├── install-gemini.sh         # Gemini CLI 설치
+│   ├── setup-ssh-key.sh          # SSH 키 생성
+│   ├── validate-environment.sh   # 환경 검증 및 진단
+│   └── check-versions.sh         # 버전 확인
+├── configs/
+│   ├── wslconfig-windows         # .wslconfig 템플릿
+│   ├── wsl.conf                  # wsl.conf 템플릿
+│   ├── mcp-config.json           # MCP 설정 예제
+│   └── vscode-settings.json      # VS Code 권장 설정
+└── docs/
+    └── troubleshooting.md        # 문제 해결 가이드
+
+### 권장 설치 순서
+1.  **9) WSL2 대화형 사양 맞춤 최적화**: 시스템 RAM에 맞춘 메모리 할당 및 Windows 11 전용 고급 기능(Mirrored Network 등)을 설정합니다.
+2.  **1) Full setup**: Node.js, Claude Code, Gemini CLI 등 개발 도구를 일괄 설치합니다.
+3.  **10) 환경 검증**: 모든 설정이 최적의 상태(PATH 격리 등)인지 확인합니다.
+
+---
+
+## 🛠 주요 최적화 기능 (WSL2 Architecture Analysis 기반)
+
+### 1. 전역 리소스 관리 (.wslconfig)
+-   **Memory Allocation**: 시스템 RAM 사양에 맞춰 25%~75% 자동 제안.
+-   **Experimental Features (Win 11)**:
+    -   `mirrored`: Windows와 WSL간의 네트워크 경계를 허물어 `localhost` 통신 최적화.
+    -   `autoMemoryReclaim`: 리눅스에서 사용하지 않는 메모리를 윈도우로 즉시 반환.
+    -   `sparseVhd`: 리눅스 파일을 지우면 가상 디스크(VHDX) 크기를 자동으로 축소.
+
+### 2. 환경 격리 및 연동 (wsl.conf)
+-   **Windows PATH 격리**: `appendWindowsPath = false`를 통해 Windows의 수많은 `.exe` 파일이 리눅스 환경에 간섭하는 것을 방지 (성능 향상 및 명령어 충돌 방지).
+-   **VS Code 연동**: PATH를 격리하더라도 `code .`을 사용할 수 있도록 VS Code 바이너리 경로만 추출하여 별도 복구.
+-   **Permissions (Metadata)**: `/mnt/c` 등의 드라이브 마운트 시 리눅스 권한(`chmod`, `chown`)을 사용할 수 있도록 설정.
+
+자세한 내용: [문제 해결 가이드](docs/troubleshooting.md)
+
+### 🔴 Windows 10 vs 11 중요 차이점
+
+| 기능 | Windows 10 | Windows 11 (22H2+) |
+|------|------------|-------------------|
+| **네트워크 모드** | NAT만 (localhost 제한) | **Mirrored** ✅ (양방향 localhost) |
+| **메모리 자동 회수** | ❌ | ✅ `autoMemoryReclaim` |
+| **AI IDE 호환성** | 제한적 (우회 필요) | **완전 지원** ✅ |
+
+> **Cursor, Antigravity 등 AI IDE 사용 시 Windows 11 + `networkingMode=mirrored` 필수!**
+
+📚 공식 문서: [Microsoft WSL 구성 가이드](https://learn.microsoft.com/ko-kr/windows/wsl/wsl-config)
 
 ## 사전 요구사항
 
 - Windows 10/11 with WSL2 활성화
+  - ⚠️ **권장**: Windows 11 22H2 이상 (AI IDE 완전 지원)
 - WSL2 배포판 설치 (지원 OS 참고)
 - WSLg (GUI 지원) - 최신 WSL2 버전에 포함
 - 인터넷 연결
@@ -197,10 +387,15 @@ dev_setup/
 │   ├── install-chrome.sh         # Chrome 및 MCP 설치
 │   ├── start-chrome-debug.sh     # Chrome 원격 디버깅 시작 스크립트
 │   ├── setup-ssh-key.sh          # SSH 키 생성 및 GitHub 설정
-│   └── check-versions.sh         # 설치된 도구 버전 확인
+│   ├── check-versions.sh         # 설치된 도구 버전 확인
+│   ├── validate-environment.sh   # 🆕 환경 검증 (PATH 오염, 설정 점검)
+│   └── apply-optimizations.sh    # 🆕 WSL2 최적화 설정 적용
 ├── configs/
 │   ├── mcp-config.json           # MCP 설정 예시
-│   └── bashrc-additions          # 환경 변수 및 별칭
+│   ├── bashrc-additions          # 환경 변수 및 별칭
+│   ├── wsl.conf                  # 🆕 /etc/wsl.conf 템플릿 (PATH 오염 방지)
+│   ├── wslconfig-windows         # 🆕 .wslconfig 템플릿 (메모리, 네트워크)
+│   └── vscode-settings.json      # 🆕 VS Code 최적화 설정
 ├── docs/
 │   ├── troubleshooting.md        # 종합 문제 해결 가이드 (한국어)
 │   └── en/                       # 영어 문서

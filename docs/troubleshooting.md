@@ -2,16 +2,396 @@
 
 WSL2 개발 환경 설정 중 발생하는 일반적인 문제와 해결 방법입니다. GitHub 이슈 및 커뮤니티 포럼에서 검증된 솔루션을 기반으로 작성되었습니다.
 
+> **📚 공식 문서**: [Microsoft WSL 구성 가이드](https://learn.microsoft.com/ko-kr/windows/wsl/wsl-config)
+
 > **English version**: See [en/troubleshooting.md](en/troubleshooting.md)
 
 ## 목차
 
-1. [Chrome DevTools MCP 문제](#chrome-devtools-mcp-문제)
-2. [WSLg (GUI) 문제](#wslg-gui-문제)
-3. [Node.js 및 npm 문제](#nodejs-및-npm-문제)
-4. [SSH 키 문제](#ssh-키-문제)
-5. [네트워크 및 포트 문제](#네트워크-및-포트-문제)
-6. [일반 WSL2 문제](#일반-wsl2-문제)
+1. [🔴 Windows 10 vs 11 기능 차이 (필독)](#windows-10-vs-11-기능-차이-필독)
+2. [🔴 핵심 문제: PATH 오염 및 Windows/Linux 바이너리 충돌](#핵심-문제-path-오염-및-windowslinux-바이너리-충돌)
+3. [🔴 파일 시스템 성능 및 권한 문제](#파일-시스템-성능-및-권한-문제)
+4. [🟡 Git 줄바꿈(CRLF/LF) 및 권한 문제](#git-줄바꿈crlfLf-및-권한-문제)
+5. [AI IDE 관련 (Cursor, Antigravity)](#ai-ide-관련-cursor-antigravity)
+6. [Chrome DevTools MCP 문제](#chrome-devtools-mcp-문제)
+7. [WSLg (GUI) 문제](#wslg-gui-문제)
+8. [Node.js 및 npm 문제](#nodejs-및-npm-문제)
+9. [SSH 키 문제](#ssh-키-문제)
+10. [네트워크 및 포트 문제](#네트워크-및-포트-문제)
+11. [일반 WSL2 문제](#일반-wsl2-문제)
+
+---
+
+## Windows 10 vs 11 기능 차이 (필독)
+
+> ⚠️ **중요**: Windows 버전에 따라 사용 가능한 WSL2 기능이 **근본적으로 다릅니다**.
+> AI IDE(Cursor, Antigravity)나 복잡한 네트워크 환경에서는 Windows 11이 **사실상 필수**입니다.
+
+### 기능 비교표
+
+| 기능 | Windows 10 | Windows 11 (22H2+) | 구성 방법 |
+|------|------------|-------------------|-----------|
+| **네트워크 모드** | NAT만 지원 | **Mirrored 지원** ✅ | `.wslconfig`: `networkingMode=mirrored` |
+| **Localhost 접근** | Win→Lin만 | **양방향** ✅ | Mirrored 모드 사용 |
+| **메모리 자동 회수** | ❌ 미지원 | **gradual/dropcache** ✅ | `.wslconfig`: `autoMemoryReclaim=gradual` |
+| **디스크 자동 축소** | ❌ 미지원 | **Sparse VHD** ✅ | `.wslconfig`: `sparseVhd=true` |
+| **IPv6 지원** | 제한적 | **완전 지원** | Mirrored 모드 사용 |
+| **VPN 호환성** | 문제 빈번 | **자동 공유** | Mirrored 모드 사용 |
+| **호스트 루프백** | ❌ 미지원 | ✅ 지원 | `hostAddressLoopback=true` |
+| **Systemd** | 업데이트 필요 | 기본 지원 | `wsl.conf`: `systemd=true` |
+| **WSLg (GUI)** | 업데이트 필요 | 기본 내장 | 자동 |
+
+### 네트워킹 모드 상세 비교
+
+#### NAT 모드 (Windows 10 기본)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Windows Host (192.168.1.100)                       │
+│  ┌─────────────────────────────────────────────┐    │
+│  │  Hyper-V Virtual Switch (NAT)               │    │
+│  │  ┌─────────────────────────────────────┐    │    │
+│  │  │  WSL2 VM (172.28.x.x)               │    │    │
+│  │  │  - localhost ≠ Windows localhost    │    │    │
+│  │  │  - 별도 IP 대역                      │    │    │
+│  │  └─────────────────────────────────────┘    │    │
+│  └─────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+
+문제점:
+- Linux에서 localhost:9222 → Windows Chrome 연결 불가
+- VPN 연결 시 WSL 인터넷 끊김
+- IPv6 미지원
+```
+
+#### Mirrored 모드 (Windows 11 22H2+)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Windows Host + WSL2 (동일 네트워크 스택 공유)       │
+│  - IP: 192.168.1.100 (공유)                        │
+│  - localhost: 양방향 완벽 호환                      │
+│  - VPN: 자동 공유                                   │
+│  - IPv6, mDNS, 멀티캐스트 지원                      │
+└─────────────────────────────────────────────────────┘
+
+해결:
+- Linux localhost:9222 = Windows localhost:9222 ✅
+- Antigravity Browser Agent 정상 작동 ✅
+```
+
+### Windows 10 사용자를 위한 권장사항
+
+**1. .wslconfig 수정 (Windows 11 전용 옵션 제거):**
+
+```ini
+# %USERPROFILE%\.wslconfig (Windows 10 호환 버전)
+[wsl2]
+memory=8GB
+processors=4
+swap=4GB
+localhostForwarding=true
+guiApplications=true
+
+# ⚠️ 아래 옵션들은 Windows 10에서 무시되거나 오류 발생
+# networkingMode=mirrored  # 주석 처리!
+# [experimental] 섹션 전체 주석 처리!
+```
+
+**2. Localhost 연결 문제 우회 (NAT 모드):**
+
+```bash
+# WSL에서 Windows 호스트 IP 확인
+cat /etc/resolv.conf | grep nameserver | awk '{print $2}'
+# 예: 172.28.0.1
+
+# Chrome 디버깅 연결 시 localhost 대신 호스트 IP 사용
+curl http://172.28.0.1:9222/json/version
+```
+
+**3. Windows 11 업그레이드 고려:**
+- Antigravity, Cursor 등 AI IDE 완전 지원
+- VPN + WSL 호환성 문제 해결
+- 메모리 자동 회수로 장시간 사용 안정성 향상
+
+---
+
+## 핵심 문제: PATH 오염 및 Windows/Linux 바이너리 충돌
+
+### ⚠️ 가장 중요한 문제
+
+WSL2의 기본 설정은 Windows의 PATH를 Linux에 자동으로 추가합니다. 이로 인해 **심각한 충돌**이 발생할 수 있습니다.
+
+### 증상
+
+```bash
+# Windows의 node.exe가 실행됨
+$ which node
+/mnt/c/Program Files/nodejs/node.exe
+
+# 바이너리 형식 오류
+$ node script.js
+cannot execute binary file: Exec format error
+
+# npm.cmd 실행 시 문법 오류
+$ npm install
+Syntax error: word unexpected (expecting "in")
+
+# NVM으로 버전 변경해도 Windows 버전이 계속 실행됨
+$ nvm use 18
+$ node --version
+v14.0.0  # Windows에 설치된 버전
+```
+
+### 근본 원인
+
+WSL2가 Windows의 `%PATH%`를 Linux의 `$PATH` 끝에 추가하여:
+- Linux 바이너리가 없으면 Windows 바이너리(.exe)가 실행됨
+- Windows 배치 파일(.cmd)을 Linux 쉘 스크립트로 해석하려 시도
+- NVM 등 버전 관리자가 무력화됨
+
+### 해결 방법 (필수)
+
+**1. /etc/wsl.conf 설정:**
+
+```bash
+# 템플릿 복사
+sudo cp configs/wsl.conf /etc/wsl.conf
+
+# 또는 수동 생성
+sudo tee /etc/wsl.conf << 'EOF'
+[interop]
+enabled = true
+appendWindowsPath = false
+
+[automount]
+options = "metadata,uid=1000,gid=1000,umask=022,fmask=11,case=off"
+
+[boot]
+systemd = true
+EOF
+```
+
+**2. WSL 재시작 (PowerShell에서):**
+
+```powershell
+wsl --shutdown
+```
+
+**⚠️ "8초 규칙"**: 터미널 종료 후 약 8초 대기하거나 `wsl --shutdown`으로 강제 종료해야 설정이 적용됩니다.
+
+**3. 필요한 Windows 도구만 선택적 추가 (~/.bashrc):**
+
+```bash
+# VS Code
+export PATH="$PATH:/mnt/c/Users/$USER/AppData/Local/Programs/Microsoft VS Code/bin"
+
+# Windows 시스템 도구 (explorer.exe 등)
+export PATH="$PATH:/mnt/c/Windows/System32"
+
+# 또는 alias 사용
+alias explorer='/mnt/c/Windows/explorer.exe'
+```
+
+**4. 검증:**
+
+```bash
+# PATH에 /mnt/c가 없어야 함
+echo $PATH | grep -c "/mnt/c"  # 0이어야 정상
+
+# node가 Linux 경로를 가리켜야 함
+which node  # /home/user/.nvm/versions/node/v20.x.x/bin/node
+```
+
+---
+
+## 파일 시스템 성능 및 권한 문제
+
+### /mnt/c 사용 시 성능 저하 (10~100배 느림)
+
+**원인:** WSL2는 Windows 드라이브를 **9P 프로토콜**(네트워크 파일 시스템)로 마운트합니다. 
+대용량 단일 파일 전송은 빠르지만, **수만 개의 작은 파일** 처리에서 극심한 오버헤드 발생.
+
+**증상:**
+- `npm install`이 수 분 소요 (네이티브: 수 초)
+- 파일 감시(watch) 모드가 느리거나 감지 실패
+- IDE 인덱싱이 매우 느림
+
+**해결:**
+
+```bash
+# ❌ 절대 금지
+cd /mnt/c/Users/Me/projects/my-app
+npm install  # 매우 느림
+
+# ✅ 올바른 방법
+cd ~/projects
+git clone git@github.com:user/my-app.git
+cd my-app
+npm install  # 빠름
+```
+
+### chmod가 작동하지 않음 (777 문제)
+
+**증상:**
+```bash
+$ chmod 600 ~/.ssh/id_rsa
+$ ls -la ~/.ssh/id_rsa
+-rwxrwxrwx 1 user user ...  # 여전히 777
+```
+
+**원인:** /mnt/c에서는 NTFS가 Linux 권한을 지원하지 않음
+
+**해결:**
+
+```ini
+# /etc/wsl.conf
+[automount]
+options = "metadata,umask=22,fmask=11"
+```
+
+재시작 후:
+```bash
+# 기존 파일의 권한 수정
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_*
+chmod 644 ~/.ssh/id_*.pub
+```
+
+### 파일 잠금 오류 (EBUSY/EPERM)
+
+**증상:**
+```bash
+Error: EPERM: operation not permitted
+Error: EBUSY: resource busy or locked
+rm: cannot remove 'node_modules': Directory not empty
+```
+
+**원인:** Windows Defender나 다른 프로세스가 파일을 잠금
+
+**해결:**
+1. Windows Defender에서 프로젝트 폴더 제외
+2. 프로젝트를 Linux 파일시스템으로 이동
+3. 필요시 WSL 재시작: `wsl --shutdown`
+
+---
+
+## Git 줄바꿈(CRLF/LF) 및 권한 문제
+
+### "bad interpreter: ^M" 오류
+
+**증상:**
+```bash
+$ ./script.sh
+/bin/bash^M: bad interpreter: No such file or directory
+```
+
+**원인:** Windows에서 생성된 파일에 CRLF 줄바꿈이 포함됨
+
+**해결:**
+
+```bash
+# 1. 파일 변환
+dos2unix script.sh
+# 또는
+sed -i 's/\r$//' script.sh
+
+# 2. Git 설정으로 예방
+git config --global core.autocrlf input
+git config --global core.eol lf
+```
+
+### Git이 모든 파일을 "변경됨"으로 표시
+
+**증상:** 아무것도 수정하지 않았는데 `git status`에 모든 파일이 변경됨으로 표시
+
+**원인:** 파일 모드(실행 권한) 변경이 감지됨
+
+**해결:**
+
+```bash
+git config --global core.filemode false
+```
+
+### Git 설정 권장값
+
+```bash
+# 줄바꿈 처리 (Linux 스타일 유지)
+git config --global core.autocrlf input
+
+# 파일 모드 변경 무시
+git config --global core.filemode false
+
+# 기본 줄바꿈
+git config --global core.eol lf
+```
+
+---
+
+## AI IDE 관련 (Cursor, Antigravity)
+
+### Cursor: CPU 점유율 폭증 / UI 프리징
+
+**원인:** 파일 감시자(File Watcher)가 node_modules 등을 실시간 감시
+
+**해결 (settings.json):**
+
+```json
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/objects/**": true,
+    "**/venv/**": true,
+    "**/__pycache__/**": true,
+    "**/.nx/cache/**": true,
+    "**/dist/**": true,
+    "**/build/**": true
+  }
+}
+```
+
+또는 `configs/vscode-settings.json` 참조
+
+### Antigravity: 브라우저 에이전트 연결 실패
+
+**증상:**
+```
+ECONNREFUSED 127.0.0.1:9222
+브라우저를 제어할 수 없습니다
+```
+
+**원인:** WSL2의 localhost가 Windows의 localhost와 격리됨 (NAT 모드)
+
+**해결 (Windows 11 22H2+):**
+
+```ini
+# %USERPROFILE%\.wslconfig
+[wsl2]
+networkingMode=mirrored
+```
+
+PowerShell에서:
+```powershell
+wsl --shutdown
+```
+
+### .wslconfig 권장 설정 (AI IDE용)
+
+```ini
+[wsl2]
+memory=8GB
+processors=4
+swap=4GB
+networkingMode=mirrored
+dnsTunneling=true
+autoProxy=true
+localhostForwarding=true
+guiApplications=true
+
+[experimental]
+autoMemoryReclaim=gradual
+sparseVhd=true
+```
 
 ---
 

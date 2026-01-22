@@ -69,14 +69,57 @@ dev_setup/
 │   ├── install-chrome.sh      # Chrome + chrome-devtools-mcp
 │   ├── start-chrome-debug.sh  # Chrome remote debugging launcher
 │   ├── setup-ssh-key.sh       # SSH key generation (ED25519/RSA)
-│   └── check-versions.sh      # Version checker for installed tools
+│   ├── check-versions.sh      # Version checker for installed tools
+│   ├── validate-environment.sh # 🆕 Environment validation (PATH pollution, settings check)
+│   └── apply-optimizations.sh  # 🆕 Apply WSL2 optimizations
 ├── configs/
 │   ├── mcp-config.json        # MCP configuration template
-│   └── bashrc-additions       # Environment variables and helper functions
+│   ├── bashrc-additions       # Environment variables and helper functions
+│   ├── wsl.conf               # 🆕 /etc/wsl.conf template (PATH pollution prevention)
+│   ├── wslconfig-windows      # 🆕 .wslconfig template (memory, networking)
+│   └── vscode-settings.json   # 🆕 VS Code optimization settings
 ├── docs/
 │   └── troubleshooting.md     # Comprehensive troubleshooting guide
 ├── README.md                  # User-facing documentation
 └── CLAUDE.md                  # This file
+```
+
+## ⚠️ Critical: WSL2 Environment Optimization
+
+### PATH Pollution Problem
+
+By default, WSL2 appends Windows PATH to Linux PATH, causing:
+- `Exec format error` when Windows binaries are invoked
+- NVM version management becoming ineffective
+- npm/node path confusion
+
+### Solution
+
+```bash
+# Apply optimizations (interactive)
+bash scripts/apply-optimizations.sh
+
+# Or validate current environment
+bash scripts/validate-environment.sh
+```
+
+### Key Configuration Files
+
+**`/etc/wsl.conf`** (Linux side):
+```ini
+[interop]
+enabled = true
+appendWindowsPath = false  # CRITICAL: Prevents PATH pollution
+
+[automount]
+options = "metadata,umask=22,fmask=11"  # Enables chmod/chown
+```
+
+**`%USERPROFILE%\.wslconfig`** (Windows side):
+```ini
+[wsl2]
+memory=8GB
+networkingMode=mirrored  # Required for Antigravity, improves MCP connectivity
 ```
 
 ## Common Development Commands
@@ -95,6 +138,10 @@ bash scripts/install-claude-code.sh
 bash scripts/install-gemini.sh
 bash scripts/install-chrome.sh
 bash scripts/setup-ssh-key.sh
+
+# 🆕 Environment optimization
+bash scripts/apply-optimizations.sh
+bash scripts/validate-environment.sh
 ```
 
 ### Testing Components

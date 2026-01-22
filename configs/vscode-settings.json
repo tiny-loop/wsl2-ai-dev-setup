@@ -1,0 +1,112 @@
+{
+  // ============================================
+  // WSL2 + AI IDE 최적화 VS Code 설정
+  // ============================================
+  // 이 파일의 설정을 .vscode/settings.json에 추가하거나
+  // VS Code 사용자 설정에 병합하세요.
+  
+  // --------------------------------------------
+  // 파일 감시자 제외 (File Watcher Exclude)
+  // AI IDE(Cursor, Antigravity)의 인덱싱 부하 감소
+  // WSL2 환경에서 CPU 점유율 폭증 방지
+  // --------------------------------------------
+  "files.watcherExclude": {
+    // Node.js 의존성 - 수만 개의 작은 파일
+    "**/node_modules/**": true,
+    
+    // Git 내부 데이터베이스
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    
+    // Python 환경
+    "**/venv/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true,
+    "**/.pytest_cache/**": true,
+    "**/env/**": true,
+    
+    // 빌드 출력물
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/out/**": true,
+    "**/.next/**": true,
+    "**/.nuxt/**": true,
+    
+    // 캐시 디렉토리
+    "**/.nx/cache/**": true,
+    "**/.turbo/**": true,
+    "**/.cache/**": true,
+    "**/coverage/**": true,
+    
+    // 기타
+    "**/tmp/**": true,
+    "**/temp/**": true,
+    "**/*.log": true
+  },
+  
+  // --------------------------------------------
+  // 검색 제외 (Search Exclude)
+  // 코드 검색 시 불필요한 파일 제외
+  // --------------------------------------------
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.git": true,
+    "**/package-lock.json": true,
+    "**/yarn.lock": true,
+    "**/pnpm-lock.yaml": true
+  },
+  
+  // --------------------------------------------
+  // 파일 제외 (Files Exclude)
+  // 탐색기에서 숨김 처리
+  // --------------------------------------------
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/*.pyc": true
+  },
+  
+  // --------------------------------------------
+  // Git 설정
+  // WSL2 환경 최적화
+  // --------------------------------------------
+  // Git 자동 가져오기 비활성화 (성능)
+  "git.autofetch": false,
+  
+  // 대규모 저장소에서 Git 상태 확인 제한
+  "git.repositoryScanMaxDepth": 1,
+  
+  // --------------------------------------------
+  // 터미널 설정
+  // WSL2 기본 셸 사용
+  // --------------------------------------------
+  "terminal.integrated.defaultProfile.linux": "bash",
+  
+  // --------------------------------------------
+  // 파일 인코딩 및 줄바꿈
+  // CRLF/LF 문제 방지
+  // --------------------------------------------
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  
+  // --------------------------------------------
+  // 에디터 성능 최적화
+  // --------------------------------------------
+  // 대용량 파일 경고 임계값
+  "editor.largeFileOptimizations": true,
+  
+  // 미니맵 비활성화 (성능 향상)
+  "editor.minimap.enabled": false,
+  
+  // 자동 저장
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
+}
