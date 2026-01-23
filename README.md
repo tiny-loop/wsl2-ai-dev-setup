@@ -27,7 +27,7 @@ Windows WSL2에서 AI IDE (Claude Desktop, Cursor 등) 및 개발 도구를 위�
 
 ```bash
 # WSL2 터미널에서 실행
-git clone https://github.com/your-repo/wsl2-ai-dev-setup.git
+git clone https://github.com/tiny-flowlab/wsl2-ai-dev-setup.git
 cd wsl2-ai-dev-setup
 ```
 
@@ -307,8 +307,9 @@ wsl -d Ubuntu-22.04
 **Git이 이미 설치되어 있는 경우:**
 ```bash
 # 저장소 클론
-git clone https://github.com/<your-username>/dev_setup.git ~/my_work/dev_setup
-cd ~/my_work/dev_setup
+# WSL2 터미널에서 실행
+git clone https://github.com/tiny-flowlab/wsl2-ai-dev-setup.git
+cd wsl2-ai-dev-setup
 ```
 
 **Git이 설치되어 있지 않은 경우:**
