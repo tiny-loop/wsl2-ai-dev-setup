@@ -54,3 +54,9 @@ id_ed25519*
 
 # Generated configuration files
 configs/generated/
+# AI Model-specific context files (local development)
+CLAUDE.md
+gemini.md
+claude.md
+anthropic.md
+.claude/
