@@ -7,9 +7,10 @@ Windows WSL2에서 AI IDE (Claude Desktop, Cursor 등) 및 개발 도구를 위�
 ## ✨ 주요 특징
 
 - **🎯 3단계 설치 프로세스** - Windows 설정 → WSL 환경 → 개발 도구 순서로 명확한 단계
+- **� Windows 10/11 자동 호환성** - Windows 버전 감지 후 배포하는 옵션을 자동으로 조정 (Mirrored, Experimental 기능은 Win11에서만)
 - **🔒 Windows PATH 오염 방지** - `appendWindowsPath=false`로 충돌 방지, VS Code 경로만 선택적 추가
 - **🌐 Mirrored Networking** - Windows 11에서 AI IDE의 Browser Subagent 완벽 지원
-- **⚡ 자동 메모리 관리** - WSL2 메모리 자동 회수로 시스템 안정성 향상
+- **⚡ 자동 메모리 관리** - WSL2 메모리 자동 회수로 시스템 안정성 향상 (Windows 11)
 - **📦 선택적 설치** - Node.js, Chrome, Claude Code, Gemini CLI 등 필요한 것만 설치
 
 ## 목차
@@ -51,17 +52,28 @@ bash scripts/setup-1-windows.sh
 
 **수행 작업:**
 - Windows 사용자 홈 자동 탐지
-- 시스템 메모리 및 Windows 버전 확인
+- **시스템 메모리 및 Windows 버전 자동 감지**
 - WSL2 메모리/CPU 할당량 설정
-- Mirrored Networking 활성화 (Windows 11)
+- **고급 옵션 선택** (모든 사용자에게 동일 메뉴 표시):
+  - Mirrored Networking (Windows 11 권장)
+  - Sparse VHD (Windows 11 전용)
+  - Auto Memory Reclaim (Windows 11 전용)
+  - DNS Tunneling (Windows 11 전용)
+- **Windows 10**: 미지원 옵션 자동 제외 + 요약 표시
+- **Windows 11**: 모든 옵션 사용 가능
 - `.wslconfig` 파일을 Windows 홈에 **자동 복사** ✅
+
+**Windows 10 사용자:**
+- Mirrored, Experimental 기능이 자동으로 제외됩니다.
+- NAT 모드로 WSL이 실행되며, `$WINDOWS_HOST` 환경변수로 Windows 서비스 접근 가능
 
 **완료 후:**
 ```powershell
 # Windows PowerShell에서 실행
 wsl --shutdown
+wsl  # WSL 재시작 (설정 적용)
 ```
-그 다음 WSL을 다시 시작하고 Step 2로 진행
+WSL 다시 시작 후 Step 2로 진행
 
 ### Step 2: WSL 기본 환경 설정
 
